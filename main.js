@@ -7,7 +7,7 @@ import StatsView from './src/views/StatsView.js';
 import { Utils } from './src/core/Utils.js';
 import Toast from './src/components/Toast.js';
 
-// bootstrap app
+// bootstrap
 const store = new TaskStore({ driver: new LocalStorageDriver() });
 
 const dom = {
@@ -24,6 +24,7 @@ const statsView = new StatsView({ store });
 
 function hideAllViews() {
   document.querySelectorAll('.view-section').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.view-section').forEach(s => s.setAttribute('aria-hidden', 'true'));
 }
 function setActiveButton(active) {
   [dom.viewDaily, dom.viewMatrix, dom.viewStats].forEach(b => b.classList.remove('active'));
@@ -34,6 +35,7 @@ function wireNav() {
   dom.viewDaily.addEventListener('click', () => {
     hideAllViews();
     document.getElementById('dailyView').style.display = 'block';
+    document.getElementById('dailyView').setAttribute('aria-hidden', 'false');
     setActiveButton(dom.viewDaily);
     dailyView.render();
     store.setPref('currentView', 'daily');
@@ -41,6 +43,7 @@ function wireNav() {
   dom.viewMatrix.addEventListener('click', () => {
     hideAllViews();
     document.getElementById('matrixView').style.display = 'block';
+    document.getElementById('matrixView').setAttribute('aria-hidden', 'false');
     setActiveButton(dom.viewMatrix);
     matrixView.render();
     store.setPref('currentView', 'matrix');
@@ -48,6 +51,7 @@ function wireNav() {
   dom.viewStats.addEventListener('click', () => {
     hideAllViews();
     document.getElementById('statsView').style.display = 'block';
+    document.getElementById('statsView').setAttribute('aria-hidden', 'false');
     setActiveButton(dom.viewStats);
     statsView.render();
     store.setPref('currentView', 'stats');
@@ -61,7 +65,7 @@ async function init() {
   matrixView.attach();
   dailyView.attach();
   statsView.attach();
-  // initial view
+
   const current = store.getPref('currentView') || 'daily';
   if (current === 'matrix') dom.viewMatrix.click();
   else if (current === 'stats') dom.viewStats.click();
@@ -73,5 +77,4 @@ async function init() {
 
 init();
 
-// expose simple debug
 window.priobox = { store, Utils, Toast };
