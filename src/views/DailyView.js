@@ -48,7 +48,6 @@ export default class DailyView {
         (t.description ? `<div class="task-desc">${Utils.escapeHtml(t.description)}</div>` : '') +
         (t.due ? `<div class="task-due">${Utils.formatDateISO(t.due)}</div>` : '') + `</div>`;
       wrapper.addEventListener('dblclick', () => {
-        // open panel via simple DOM interaction:
         document.getElementById('panelTitle').textContent = 'Edit task';
         document.getElementById('pTitle').value = t.title;
         document.getElementById('pDesc').value = t.description || '';
@@ -64,4 +63,3 @@ export default class DailyView {
     container.appendChild(section);
   }
 }
-test
