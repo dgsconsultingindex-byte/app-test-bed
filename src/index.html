@@ -1,1 +1,214 @@
-test
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PrioBox — Focus What Matters</title>
+  <meta name="description" content="PrioBox — Eisenhower priority matrix with due dates, labels, calendar export and cloud sync." />
+  <link rel="stylesheet" href="./src/styles/theme.css" />
+  <link rel="stylesheet" href="./src/styles/components.css" />
+  <link rel="stylesheet" href="./src/styles/app.css" />
+</head>
+<body>
+  <div id="loading" class="loading-overlay">Loading your priorities...</div>
+
+  <div class="wrap" id="root">
+    <header>
+      <div class="brand">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="35" height="35" rx="5" fill="#2ea043"/>
+          <rect x="55" y="10" width="35" height="35" rx="5" fill="#4caf50"/>
+          <rect x="10" y="55" width="35" height="35" rx="5" fill="#66bb6a"/>
+          <rect x="55" y="55" width="35" height="35" rx="5" fill="#81c784"/>
+        </svg>
+        <div>
+          <h1>PrioBox</h1>
+          <p>Focus what matters</p>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="signOutBtn" class="btn-ghost" style="display:none;height:40px;padding:8px 12px;border-radius:10px;">Sign Out</button>
+        <button id="accountBtn" class="btn-ghost" style="display:none;height:40px;padding:8px 12px;border-radius:10px;">Account</button>
+      </div>
+    </header>
+
+    <div id="appArea">
+      <div style="display:flex;justify-content:center;margin:16px 0">
+        <div class="view-toggle">
+          <button id="viewDaily" class="view-btn active">Daily Focus</button>
+          <button id="viewMatrix" class="view-btn">Full Matrix</button>
+          <button id="viewStats" class="view-btn">Analytics</button>
+        </div>
+      </div>
+
+      <main>
+        <section id="dailyView" class="view-section">
+          <div class="daily-hero">
+            <h2>Today's Focus</h2>
+            <p id="dailyDate"></p>
+          </div>
+
+          <div id="dailyStats" class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+            <div class="stat-card"><div class="stat-value" id="todayDue">0</div><div class="stat-label">Due Today</div></div>
+            <div class="stat-card"><div class="stat-value" id="overdueCount">0</div><div class="stat-label">Overdue</div></div>
+            <div class="stat-card"><div class="stat-value" id="upcomingCount">0</div><div class="stat-label">This Week</div></div>
+          </div>
+
+          <div class="focus-list" id="dailyTasks"></div>
+        </section>
+
+        <section id="matrixView" class="view-section" style="display:none">
+          <section class="controls" aria-label="Task controls">
+            <input id="taskTitle" type="text" placeholder="Task title (required)" />
+            <input id="taskDescription" type="text" placeholder="Description (optional)" />
+            <input id="taskDue" type="date" />
+            <select id="taskQuadrant">
+              <option value="do-first">Do First</option>
+              <option value="schedule">Schedule</option>
+              <option value="delegate">Delegate</option>
+              <option value="eliminate">Eliminate</option>
+            </select>
+            <select id="taskLabel">
+              <option value="">No label</option>
+              <option value="client">Client</option>
+              <option value="personal">Personal</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <button class="btn" id="addBtn">Add Task</button>
+            <button class="btn-ghost" id="clearBtn">Clear All</button>
+            <button class="btn-ghost" id="demoBtn">Demo Data</button>
+            <button id="exportBtn" class="btn-ghost" title="Export JSON">Export</button>
+            <button id="importBtn" class="btn-ghost" title="Import JSON">Import</button>
+          </section>
+
+          <div class="search-row"><input id="searchInput" type="search" placeholder="Search tasks by title, description, due date, label..." /></div>
+
+          <div class="filters">
+            <button id="toggleCompletedBtn" class="btn-ghost" style="height:36px;padding:8px 12px;border-radius:8px">Hide Completed</button>
+            <div style="font-size:0.9rem;color:#4f6b51">Double-click to edit • Drag between quadrants</div>
+          </div>
+
+          <section class="matrix" aria-label="Priority matrix">
+            <div class="quadrant do-first" data-q="do-first">
+              <div class="quad-head">
+                <div><div class="quad-title">Do First</div><div class="quad-sub">Urgent & Important</div></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <div id="do-first-count">(0/0 done)</div>
+                  <div class="progress-bar"><div id="do-first-fill" class="progress-fill"></div></div>
+                </div>
+              </div>
+              <div class="tasks" id="do-first-tasks" aria-live="polite"></div>
+            </div>
+
+            <div class="quadrant schedule" data-q="schedule">
+              <div class="quad-head">
+                <div><div class="quad-title">Schedule</div><div class="quad-sub">Not Urgent but Important</div></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <div id="schedule-count">(0/0 done)</div>
+                  <div class="progress-bar"><div id="schedule-fill" class="progress-fill"></div></div>
+                </div>
+              </div>
+              <div class="tasks" id="schedule-tasks"></div>
+            </div>
+
+            <div class="quadrant delegate" data-q="delegate">
+              <div class="quad-head">
+                <div><div class="quad-title">Delegate</div><div class="quad-sub">Urgent but Not Important</div></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <div id="delegate-count">(0/0 done)</div>
+                  <div class="progress-bar"><div id="delegate-fill" class="progress-fill"></div></div>
+                </div>
+              </div>
+              <div class="tasks" id="delegate-tasks"></div>
+            </div>
+
+            <div class="quadrant eliminate" data-q="eliminate">
+              <div class="quad-head">
+                <div><div class="quad-title">Eliminate</div><div class="quad-sub">Not Urgent & Not Important</div></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <div id="eliminate-count">(0/0 done)</div>
+                  <div class="progress-bar"><div id="eliminate-fill" class="progress-fill"></div></div>
+                </div>
+              </div>
+              <div class="tasks" id="eliminate-tasks"></div>
+            </div>
+          </section>
+        </section>
+
+        <section id="statsView" class="view-section" style="display:none">
+          <h2 style="text-align:center;margin:16px 0">Your Productivity Analytics</h2>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value" id="totalTasks">0</div><div class="stat-label">Total Tasks</div><div class="stat-trend" id="completionRate"></div></div>
+            <div class="stat-card"><div class="stat-value" id="completedTasks">0</div><div class="stat-label">Completed</div><div class="chart-bar"><div class="chart-fill" id="completedBar"></div></div></div>
+            <div class="stat-card"><div class="stat-value" id="activeTasks">0</div><div class="stat-label">In Progress</div><div class="chart-bar"><div class="chart-fill" id="activeBar"></div></div></div>
+            <div class="stat-card"><div class="stat-value" id="overdueStats">0</div><div class="stat-label">Overdue Items</div><div class="stat-trend">Need attention</div></div>
+          </div>
+
+          <h3 style="margin:24px 0 12px 0">Focus Distribution</h3>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Do First</div><div class="stat-value" style="font-size:1.5rem" id="doFirstStat">0</div><div class="chart-bar"><div class="chart-fill" id="doFirstBar"></div></div></div>
+            <div class="stat-card"><div class="stat-label">Schedule</div><div class="stat-value" style="font-size:1.5rem" id="scheduleStat">0</div><div class="chart-bar"><div class="chart-fill" id="scheduleBar"></div></div></div>
+            <div class="stat-card"><div class="stat-label">Delegate</div><div class="stat-value" style="font-size:1.5rem" id="delegateStat">0</div><div class="chart-bar"><div class="chart-fill" id="delegateBar"></div></div></div>
+            <div class="stat-card"><div class="stat-label">Eliminate</div><div class="stat-value" style="font-size:1.5rem" id="eliminateStat">0</div><div class="chart-bar"><div class="chart-fill" id="eliminateBar"></div></div></div>
+          </div>
+
+          <div class="insights-box"><h3>Insights</h3><ul id="insightsList" class="insights-list"></ul></div>
+        </section>
+      </main>
+
+      <footer>© 2025 PrioBox — Built by DGS Consulting</footer>
+    </div>
+  </div>
+
+  <div id="panelBackdrop" class="panel-backdrop"></div>
+  <aside id="slidePanel" class="panel" role="dialog" aria-hidden="true">
+    <h3 id="panelTitle">Edit task</h3>
+    <div class="row">
+      <input id="pTitle" type="text" placeholder="Task title" />
+    </div>
+    <div class="row">
+      <input id="pDue" type="date" />
+      <select id="pQuadrant">
+        <option value="do-first">Do First</option>
+        <option value="schedule">Schedule</option>
+        <option value="delegate">Delegate</option>
+        <option value="eliminate">Eliminate</option>
+      </select>
+    </div>
+    <div class="row">
+      <select id="pLabel">
+        <option value="">No label</option>
+        <option value="client">Client</option>
+        <option value="personal">Personal</option>
+        <option value="urgent">Urgent</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:8px;padding:8px"><input id="pCompleted" type="checkbox"> Completed</label>
+    </div>
+    <div class="row">
+      <textarea id="pDesc" placeholder="Description"></textarea>
+    </div>
+
+    <h4>Subtasks</h4>
+    <div id="subtasksList"></div>
+    <div class="subtask-add" id="addSubtaskBtn">+ Add subtask</div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">
+      <button id="panelCancel" class="btn-ghost">Cancel</button>
+      <button id="panelSave" class="btn">Save</button>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--muted);margin:12px 0" />
+    <div style="display:flex;gap:8px;flex-direction:column">
+      <button id="addToCalendarBtn" class="btn-ghost">Open Google Calendar</button>
+      <button id="downloadICSBtn" class="btn-ghost">Download .ics</button>
+      <button id="deleteFromPanelBtn" class="btn-ghost" style="color:var(--overdue)">Delete Task</button>
+    </div>
+  </aside>
+
+  <input id="importFileInput" type="file" accept="application/json" style="display:none" />
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
+
