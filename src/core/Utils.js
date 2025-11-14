@@ -62,4 +62,3 @@ export const Utils = {
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
 };
-
