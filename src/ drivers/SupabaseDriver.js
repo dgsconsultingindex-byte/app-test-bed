@@ -20,4 +20,3 @@ export default class SupabaseDriver {
     return false;
   }
 }
-
