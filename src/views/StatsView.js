@@ -54,4 +54,3 @@ export default class StatsView {
     document.getElementById('insightsList').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
   }
 }
-
