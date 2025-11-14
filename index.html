@@ -1,213 +1,368 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PrioBox — Focus What Matters</title>
-  <meta name="description" content="PrioBox — Eisenhower priority matrix with due dates, labels, calendar export and cloud sync." />
-  <link rel="stylesheet" href="./src/styles/theme.css" />
-  <link rel="stylesheet" href="./src/styles/components.css" />
-  <link rel="stylesheet" href="./src/styles/app.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrioBox – Focus What Matters</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      background: linear-gradient(180deg, #f9faf9 0%, #e8f2e3 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    /* THEME TOGGLE BUTTON */
+    .theme-toggle {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.05);
+      background: rgba(255,255,255,0.95);
+    }
+
+    .theme-toggle svg {
+      width: 22px;
+      height: 22px;
+      fill: #163818;
+      transition: fill 0.3s ease;
+    }
+
+    body.dark .theme-toggle {
+      background: rgba(30, 45, 30, 0.9);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    body.dark .theme-toggle svg {
+      fill: #f2f9f1;
+    }
+
+    /* HERO SECTION */
+    .hero {
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 2rem;
+      padding: 6rem 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hero-content {
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeUp 1.2s ease forwards;
+      animation-delay: 0.3s;
+    }
+
+    .hero-content h1 {
+      font-size: 3.2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #163818;
+      line-height: 1.2;
+    }
+
+    .hero-content p {
+      font-size: 1.25rem;
+      color: #365634;
+      margin-bottom: 2rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #2ea043, #238636);
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 1s ease forwards;
+      animation-delay: 0.8s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, #238636, #2ea043);
+      box-shadow: 0 6px 20px rgba(46, 160, 67, 0.3);
+    }
+
+    .hero-graphic {
+      width: 100%;
+      max-width: 650px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      animation: float 6s ease-in-out infinite, fadeIn 1.4s ease forwards;
+      opacity: 0;
+    }
+
+    .hero-graphic svg {
+      width: 100%;
+      height: auto;
+      max-width: 500px;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hero-content h1 {
+        font-size: 2.2rem;
+      }
+      .hero-content p {
+        font-size: 1.1rem;
+      }
+    }
+
+    @media (min-width: 900px) {
+      .hero {
+        flex-direction: row;
+        text-align: left;
+        gap: 4rem;
+      }
+      .hero-content {
+        flex: 1;
+      }
+      .hero-graphic {
+        flex: 1;
+      }
+      .hero-content p {
+        margin-left: 0;
+      }
+    }
+
+    /* FOOTER */
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 2rem 1rem;
+      background: #163818;
+      color: #fff;
+      font-size: 0.9rem;
+      margin-top: auto;
+      transition: background 0.4s ease;
+    }
+
+    footer a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* DARK MODE */
+    body.dark {
+      background: linear-gradient(180deg, #0d1510 0%, #1c2a1a 100%);
+      color: #f2f9f1;
+    }
+
+    body.dark .hero-content h1 {
+      color: #ebfbee;
+    }
+
+    body.dark .hero-content p {
+      color: #cfe8cf;
+    }
+
+    body.dark .hero-graphic {
+      background: rgba(30, 45, 30, 0.5);
+    }
+
+    body.dark .btn {
+      background: linear-gradient(135deg, #2ea043, #1e7a32);
+      color: #fff;
+    }
+
+    body.dark .btn:hover {
+      background: linear-gradient(135deg, #1e7a32, #2ea043);
+      box-shadow: 0 6px 20px rgba(46, 160, 67, 0.4);
+    }
+
+    body.dark footer {
+      background: #0f2010;
+    }
+  </style>
 </head>
 <body>
-  <div id="loading" class="loading-overlay">Loading your priorities...</div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+    <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
+    </svg>
+    <svg id="moonIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+      <path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 17a7 7 0 0 0 9-4.21z"/>
+    </svg>
+  </button>
 
-  <div class="wrap" id="root">
-    <header>
-      <div class="brand">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <rect x="10" y="10" width="35" height="35" rx="5" fill="#2ea043"/>
-          <rect x="55" y="10" width="35" height="35" rx="5" fill="#4caf50"/>
-          <rect x="10" y="55" width="35" height="35" rx="5" fill="#66bb6a"/>
-          <rect x="55" y="55" width="35" height="35" rx="5" fill="#81c784"/>
-        </svg>
-        <div>
-          <h1>PrioBox</h1>
-          <p>Focus what matters</p>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button id="signOutBtn" class="btn-ghost" style="display:none;height:40px;padding:8px 12px;border-radius:10px;">Sign Out</button>
-        <button id="accountBtn" class="btn-ghost" style="display:none;height:40px;padding:8px 12px;border-radius:10px;">Account</button>
-      </div>
-    </header>
-
-    <div id="appArea">
-      <div style="display:flex;justify-content:center;margin:16px 0">
-        <div class="view-toggle">
-          <button id="viewDaily" class="view-btn active">Daily Focus</button>
-          <button id="viewMatrix" class="view-btn">Full Matrix</button>
-          <button id="viewStats" class="view-btn">Analytics</button>
-        </div>
-      </div>
-
-      <main>
-        <section id="dailyView" class="view-section">
-          <div class="daily-hero">
-            <h2>Today's Focus</h2>
-            <p id="dailyDate"></p>
-          </div>
-
-          <div id="dailyStats" class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
-            <div class="stat-card"><div class="stat-value" id="todayDue">0</div><div class="stat-label">Due Today</div></div>
-            <div class="stat-card"><div class="stat-value" id="overdueCount">0</div><div class="stat-label">Overdue</div></div>
-            <div class="stat-card"><div class="stat-value" id="upcomingCount">0</div><div class="stat-label">This Week</div></div>
-          </div>
-
-          <div class="focus-list" id="dailyTasks"></div>
-        </section>
-
-        <section id="matrixView" class="view-section" style="display:none">
-          <section class="controls" aria-label="Task controls">
-            <input id="taskTitle" type="text" placeholder="Task title (required)" />
-            <input id="taskDescription" type="text" placeholder="Description (optional)" />
-            <input id="taskDue" type="date" />
-            <select id="taskQuadrant">
-              <option value="do-first">Do First</option>
-              <option value="schedule">Schedule</option>
-              <option value="delegate">Delegate</option>
-              <option value="eliminate">Eliminate</option>
-            </select>
-            <select id="taskLabel">
-              <option value="">No label</option>
-              <option value="client">Client</option>
-              <option value="personal">Personal</option>
-              <option value="urgent">Urgent</option>
-            </select>
-            <button class="btn" id="addBtn">Add Task</button>
-            <button class="btn-ghost" id="clearBtn">Clear All</button>
-            <button class="btn-ghost" id="demoBtn">Demo Data</button>
-            <button id="exportBtn" class="btn-ghost" title="Export JSON">Export</button>
-            <button id="importBtn" class="btn-ghost" title="Import JSON">Import</button>
-          </section>
-
-          <div class="search-row"><input id="searchInput" type="search" placeholder="Search tasks by title, description, due date, label..." /></div>
-
-          <div class="filters">
-            <button id="toggleCompletedBtn" class="btn-ghost" style="height:36px;padding:8px 12px;border-radius:8px">Hide Completed</button>
-            <div style="font-size:0.9rem;color:#4f6b51">Double-click to edit • Drag between quadrants</div>
-          </div>
-
-          <section class="matrix" aria-label="Priority matrix">
-            <div class="quadrant do-first" data-q="do-first">
-              <div class="quad-head">
-                <div><div class="quad-title">Do First</div><div class="quad-sub">Urgent & Important</div></div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                  <div id="do-first-count">(0/0 done)</div>
-                  <div class="progress-bar"><div id="do-first-fill" class="progress-fill"></div></div>
-                </div>
-              </div>
-              <div class="tasks" id="do-first-tasks" aria-live="polite"></div>
-            </div>
-
-            <div class="quadrant schedule" data-q="schedule">
-              <div class="quad-head">
-                <div><div class="quad-title">Schedule</div><div class="quad-sub">Not Urgent but Important</div></div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                  <div id="schedule-count">(0/0 done)</div>
-                  <div class="progress-bar"><div id="schedule-fill" class="progress-fill"></div></div>
-                </div>
-              </div>
-              <div class="tasks" id="schedule-tasks"></div>
-            </div>
-
-            <div class="quadrant delegate" data-q="delegate">
-              <div class="quad-head">
-                <div><div class="quad-title">Delegate</div><div class="quad-sub">Urgent but Not Important</div></div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                  <div id="delegate-count">(0/0 done)</div>
-                  <div class="progress-bar"><div id="delegate-fill" class="progress-fill"></div></div>
-                </div>
-              </div>
-              <div class="tasks" id="delegate-tasks"></div>
-            </div>
-
-            <div class="quadrant eliminate" data-q="eliminate">
-              <div class="quad-head">
-                <div><div class="quad-title">Eliminate</div><div class="quad-sub">Not Urgent & Not Important</div></div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                  <div id="eliminate-count">(0/0 done)</div>
-                  <div class="progress-bar"><div id="eliminate-fill" class="progress-fill"></div></div>
-                </div>
-              </div>
-              <div class="tasks" id="eliminate-tasks"></div>
-            </div>
-          </section>
-        </section>
-
-        <section id="statsView" class="view-section" style="display:none">
-          <h2 style="text-align:center;margin:16px 0">Your Productivity Analytics</h2>
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-value" id="totalTasks">0</div><div class="stat-label">Total Tasks</div><div class="stat-trend" id="completionRate"></div></div>
-            <div class="stat-card"><div class="stat-value" id="completedTasks">0</div><div class="stat-label">Completed</div><div class="chart-bar"><div class="chart-fill" id="completedBar"></div></div></div>
-            <div class="stat-card"><div class="stat-value" id="activeTasks">0</div><div class="stat-label">In Progress</div><div class="chart-bar"><div class="chart-fill" id="activeBar"></div></div></div>
-            <div class="stat-card"><div class="stat-value" id="overdueStats">0</div><div class="stat-label">Overdue Items</div><div class="stat-trend">Need attention</div></div>
-          </div>
-
-          <h3 style="margin:24px 0 12px 0">Focus Distribution</h3>
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-label">Do First</div><div class="stat-value" style="font-size:1.5rem" id="doFirstStat">0</div><div class="chart-bar"><div class="chart-fill" id="doFirstBar"></div></div></div>
-            <div class="stat-card"><div class="stat-label">Schedule</div><div class="stat-value" style="font-size:1.5rem" id="scheduleStat">0</div><div class="chart-bar"><div class="chart-fill" id="scheduleBar"></div></div></div>
-            <div class="stat-card"><div class="stat-label">Delegate</div><div class="stat-value" style="font-size:1.5rem" id="delegateStat">0</div><div class="chart-bar"><div class="chart-fill" id="delegateBar"></div></div></div>
-            <div class="stat-card"><div class="stat-label">Eliminate</div><div class="stat-value" style="font-size:1.5rem" id="eliminateStat">0</div><div class="chart-bar"><div class="chart-fill" id="eliminateBar"></div></div></div>
-          </div>
-
-          <div class="insights-box"><h3>Insights</h3><ul id="insightsList" class="insights-list"></ul></div>
-        </section>
-      </main>
-
-      <footer>© 2025 PrioBox — Built by DGS Consulting</footer>
-    </div>
-  </div>
-
-  <div id="panelBackdrop" class="panel-backdrop"></div>
-  <aside id="slidePanel" class="panel" role="dialog" aria-hidden="true">
-    <h3 id="panelTitle">Edit task</h3>
-    <div class="row">
-      <input id="pTitle" type="text" placeholder="Task title" />
-    </div>
-    <div class="row">
-      <input id="pDue" type="date" />
-      <select id="pQuadrant">
-        <option value="do-first">Do First</option>
-        <option value="schedule">Schedule</option>
-        <option value="delegate">Delegate</option>
-        <option value="eliminate">Eliminate</option>
-      </select>
-    </div>
-    <div class="row">
-      <select id="pLabel">
-        <option value="">No label</option>
-        <option value="client">Client</option>
-        <option value="personal">Personal</option>
-        <option value="urgent">Urgent</option>
-      </select>
-      <label style="display:flex;align-items:center;gap:8px;padding:8px"><input id="pCompleted" type="checkbox"> Completed</label>
-    </div>
-    <div class="row">
-      <textarea id="pDesc" placeholder="Description"></textarea>
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Focus What Matters</h1>
+      <p>Visualize your priorities, align your effort, and make progress that truly counts with PrioBox.</p>
+      <a href="app.html" class="btn">Get Started Free</a>
     </div>
 
-    <h4>Subtasks</h4>
-    <div id="subtasksList"></div>
-    <div class="subtask-add" id="addSubtaskBtn">+ Add subtask</div>
-
-    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">
-      <button id="panelCancel" class="btn-ghost">Cancel</button>
-      <button id="panelSave" class="btn">Save</button>
+    <div class="hero-graphic">
+      <svg viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background circles -->
+        <circle cx="250" cy="200" r="150" fill="#e8f5e9" opacity="0.3"/>
+        <circle cx="250" cy="200" r="100" fill="#c8e6c9" opacity="0.4"/>
+        
+        <!-- Priority boxes -->
+        <rect x="180" y="120" width="140" height="40" rx="8" fill="#2ea043" opacity="0.9"/>
+        <text x="250" y="145" font-family="Arial" font-size="16" fill="white" text-anchor="middle" font-weight="bold">High Priority</text>
+        
+        <rect x="180" y="180" width="140" height="40" rx="8" fill="#4caf50" opacity="0.8"/>
+        <text x="250" y="205" font-family="Arial" font-size="16" fill="white" text-anchor="middle" font-weight="bold">Medium Priority</text>
+        
+        <rect x="180" y="240" width="140" height="40" rx="8" fill="#81c784" opacity="0.7"/>
+        <text x="250" y="265" font-family="Arial" font-size="16" fill="white" text-anchor="middle" font-weight="bold">Low Priority</text>
+        
+        <!-- Checkmarks -->
+        <path d="M 160 140 L 168 148 L 178 133" stroke="#2ea043" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 160 200 L 168 208 L 178 193" stroke="#4caf50" stroke-width="3" fill="none" stroke-linecap="round"/>
+        
+        <!-- Focus arrow -->
+        <path d="M 350 180 Q 380 200 350 220" stroke="#2ea043" stroke-width="4" fill="none" marker-end="url(#arrowhead)"/>
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+            <polygon points="0 0, 10 5, 0 10" fill="#2ea043"/>
+          </marker>
+        </defs>
+      </svg>
     </div>
+  </section>
 
-    <hr style="border:none;border-top:1px solid var(--muted);margin:12px 0" />
-    <div style="display:flex;gap:8px;flex-direction:column">
-      <button id="addToCalendarBtn" class="btn-ghost">Open Google Calendar</button>
-      <button id="downloadICSBtn" class="btn-ghost">Download .ics</button>
-      <button id="deleteFromPanelBtn" class="btn-ghost" style="color:var(--overdue)">Delete Task</button>
-    </div>
-  </aside>
+  <footer>
+    <p>Created by <strong>DGS Consulting</strong> • 
+      <a href="mailto:DGSConsult@consultant.com">Contact</a>
+    </p>
+  </footer>
 
-  <input id="importFileInput" type="file" accept="application/json" style="display:none" />
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
 
-  <script type="module" src="./main.js"></script>
+    // Initialize theme
+    function initTheme() {
+      try {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          setDarkMode(true);
+        } else {
+          setDarkMode(false);
+        }
+      } catch (error) {
+        console.warn('Could not access localStorage:', error);
+        // Fallback to system preference
+        setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+      }
+    }
+
+    function setDarkMode(isDark) {
+      if (isDark) {
+        body.classList.add('dark');
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+      } else {
+        body.classList.remove('dark');
+        sunIcon.style.display = 'block';
+        moonIcon.style.display = 'none';
+      }
+    }
+
+    function saveTheme(theme) {
+      try {
+        localStorage.setItem('theme', theme);
+      } catch (error) {
+        console.warn('Could not save theme to localStorage:', error);
+      }
+    }
+
+    // Toggle theme on button click
+    themeToggle.addEventListener('click', () => {
+      const isDark = body.classList.toggle('dark');
+      setDarkMode(isDark);
+      saveTheme(isDark ? 'dark' : 'light');
+    });
+
+    // Initialize on load
+    initTheme();
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      try {
+        if (!localStorage.getItem('theme')) {
+          setDarkMode(e.matches);
+        }
+      } catch (error) {
+        setDarkMode(e.matches);
+      }
+    });
+  </script>
 </body>
 </html>
