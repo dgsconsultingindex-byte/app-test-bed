@@ -1,1 +1,38 @@
+/* Buttons & small UI */
+.btn{height:var(--ui-h);padding:0 20px;border-radius:24px;border:none;background:var(--accent-1);color:white;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(39,94,254,0.32)}
+.btn-ghost{height:var(--ui-h);padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+.view-toggle{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:var(--radius);box-shadow:0 2px 8px var(--shadow-sm)}
+.view-btn{padding:8px 14px;border-radius:12px;border:none;background:transparent;cursor:pointer}
+.view-btn.active{background:var(--accent-1);color:white}
+
+/* Cards / Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0}
+.stat-card{background:var(--panel);padding:16px;border-radius:12px;box-shadow:0 2px 8px var(--shadow-sm);border:1px solid var(--border)}
+.stat-value{font-size:2rem;font-weight:700;color:var(--accent-1)}
+.stat-label{font-size:0.95rem;color:var(--text-secondary)}
+
+/* Tasks */
+.matrix{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.quadrant{background:var(--panel);border-radius:16px;padding:18px;box-shadow:0 2px 8px var(--shadow-sm);border:1px solid var(--border);min-height:200px}
+.quad-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tasks{margin-top:12px;display:flex;flex-direction:column;gap:12px;overflow:auto;padding-bottom:8px}
+.task{display:flex;gap:12px;align-items:flex-start;background:var(--panel);padding:12px;border-radius:12px;border:1px solid var(--border);cursor:grab}
+.task:hover{transform:translateY(-2px);box-shadow:0 4px 12px var(--shadow-md)}
+.task-left{flex:1;min-width:0}
+.task-title{margin:0;font-weight:600;font-size:0.95rem}
+.task-desc{margin-top:6px;color:var(--text-secondary);font-size:0.9rem}
+.task-due{margin-top:10px;display:inline-block;padding:6px 12px;border-radius:8px;font-weight:600;color:white;background:var(--accent-1);font-size:0.85rem}
+.task-controls{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.small-btn{background:transparent;border:none;cursor:pointer;padding:8px;border-radius:8px;font-size:15px;color:var(--text-secondary)}
+.small-btn:hover{background:var(--panel-hover);color:var(--text)}
+
+.subtasks{margin-top:8px;padding-left:8px;border-left:2px solid var(--muted)}
+.subtask{display:flex;gap:8px;align-items:center;padding:4px 0;font-size:0.9rem}
+.subtask-add{color:var(--accent-1);cursor:pointer;font-size:0.85rem;margin-top:4px;padding:4px 0}
+
+/* Panel */
+.panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.25);display:none;z-index:120}
+.panel{position:fixed;right:0;top:0;height:100%;width:420px;max-width:94%;background:var(--panel);box-shadow:-20px 0 60px rgba(0,0,0,0.3);transform:translateX(108%);transition:transform .28s ease;z-index:130;padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.panel.show{transform:translateX(0)}
+.panel-backdrop.show{display:block}
 
