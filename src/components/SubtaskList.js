@@ -39,4 +39,3 @@ export default class SubtaskList {
   mount(to) { to.appendChild(this.el); }
   unmount() { this.el.remove(); }
 }
-
