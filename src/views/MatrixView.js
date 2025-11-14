@@ -243,4 +243,3 @@ export default class MatrixView {
     samples.forEach(s => this.store.addTask(s));
   }
 }
-
