@@ -31,4 +31,3 @@ header{display:flex;justify-content:space-between;align-items:center;gap:16px;ma
 .brand{display:flex;gap:14px;align-items:center}
 .brand h1{margin:0;font-size:1.5rem;font-weight:700}
 .brand p{margin:0;font-size:0.9rem;color:var(--text-secondary)}
-
