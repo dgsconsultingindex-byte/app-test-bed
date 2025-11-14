@@ -43,4 +43,3 @@ export default class SlidePanel {
   save() { if (this.onSave) this.onSave(this.read()); }
   cancel() { if (this.onCancel) this.onCancel(); this.close(); }
 }
-
