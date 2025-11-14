@@ -35,4 +35,3 @@
 .panel{position:fixed;right:0;top:0;height:100%;width:420px;max-width:94%;background:var(--panel);box-shadow:-20px 0 60px rgba(0,0,0,0.3);transform:translateX(108%);transition:transform .28s ease;z-index:130;padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
 .panel.show{transform:translateX(0)}
 .panel-backdrop.show{display:block}
-
