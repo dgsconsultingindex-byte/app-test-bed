@@ -23,4 +23,3 @@ export default class Toast {
     setTimeout(() => t.remove(), timeout);
   }
 }
-
