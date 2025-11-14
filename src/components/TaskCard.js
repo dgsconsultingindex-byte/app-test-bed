@@ -93,4 +93,3 @@ export default class TaskCard {
   mount(to) { to.appendChild(this.el); }
   unmount() { this.el.remove(); }
 }
-test
