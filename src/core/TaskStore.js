@@ -88,3 +88,4 @@ export default class TaskStore {
     return this.getAllTasks().filter(t => (t.title + ' ' + (t.description||'') + ' ' + (t.label||'')).toLowerCase().includes(q));
   }
 }
+
