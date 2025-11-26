@@ -4,155 +4,122 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PrioBox — Priority Matrix</title>
-  <meta name="description" content="PrioBox — Clean minimal priority matrix for clarity and focus." />
-  <!-- --------------------------
-       THEME + UI KIT (Single file)
-       Linear-style: neutral, crisp, minimal
-       -------------------------- --> 
+  <meta name="description" content="PrioBox — priority matrix, focus timer, and smart queue." />
   <style>
-    /* -------- Design tokens (Linear-style) -------- */
+    /* ---------------- Design tokens (Linear-style) ---------------- */
     :root{
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --surface-elev: #fbfcfd;
-      --border: #e6e9ee;
-      --text: #0b1220;
-      --muted: #6b7280;
-      --accent: #3b82f6;
-      --accent-700: #1e63d9;
-      --success: #16a34a;
-      --danger: #ef4444;
-      --radius: 10px;
-      --shadow-sm: 0 6px 18px rgba(9, 15, 25, 0.06);
+      --bg:#f8fafc;
+      --surface:#ffffff;
+      --surface-elev:#fbfcfd;
+      --border:#e6e9ee;
+      --text:#0b1220;
+      --muted:#6b7280;
+      --accent:#3b82f6;
+      --accent-700:#1e63d9;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --radius:10px;
+      --shadow-sm:0 6px 18px rgba(9,15,25,0.06);
       --space-xs:8px; --space-sm:12px; --space-md:16px; --space-lg:24px;
-      --ease: 180ms cubic-bezier(.2,.9,.3,1);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --ease:180ms cubic-bezier(.2,.9,.3,1);
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
     }
-
-    /* ---------- Resets ---------- */
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-size:15px}
-    a{color:inherit;text-decoration:none}
-    img{max-width:100%;display:block}
-
-    /* ---------- Layout ---------- */
-    .app { display:grid; grid-template-columns:260px 1fr; gap:28px; max-width:1200px; margin:28px auto; padding:0 20px; align-items:start; }
-    @media (max-width: 920px) { .app{ grid-template-columns: 1fr; margin:0; padding:0 12px; } }
-
-    /* ---------- Sidebar ---------- */
-    .sidebar { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm); height:calc(100vh - 56px); position:sticky; top:28px; display:flex; flex-direction:column; gap:12px; }
-    @media (max-width:920px){ .sidebar{ display:none } }
-
-    .logo { display:flex; align-items:center; gap:12px; }
-    .logo img{ width:36px; height:36px; border-radius:8px; object-fit:contain }
-    .brand-title { font-weight:700; font-size:16px }
-    .brand-sub { font-size:12px; color:var(--muted) }
-
-    .nav-section { margin-top:12px; font-size:12px; color:var(--muted); letter-spacing:0.6px }
-    .nav-list { display:flex; flex-direction:column; gap:6px; margin-top:6px }
-    .nav-item { padding:10px 12px; border-radius:8px; color:var(--muted); cursor:pointer; display:flex; align-items:center; gap:10px; transition: all var(--ease); font-weight:500 }
-    .nav-item:hover { background:var(--surface-elev); color:var(--text) }
-    .nav-item.active { color:var(--accent); background: linear-gradient(90deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02)); box-shadow: inset 3px 0 0 var(--accent); font-weight:700 }
-
-    .version { margin-top:auto; font-size:12px; color:var(--muted) }
-
-    /* ---------- Main content ---------- */
-    .main { min-height:70vh; padding-bottom:40px; }
-
-    .topbar { display:flex; gap:12px; align-items:center; margin-bottom:18px; }
-    .topbar .title { font-size:22px; font-weight:700; margin:0 }
-    .topbar .subtitle { color:var(--muted); font-size:13px }
-
-    .controls { margin-left:auto; display:flex; gap:8px; align-items:center }
-
-    /* ---------- Cards and grid ---------- */
-    .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; box-shadow:var(--shadow-sm) }
-    .grid { display:grid; gap:14px }
-    .grid-3 { grid-template-columns: repeat(3, 1fr) }
-    @media (max-width:900px){ .grid-3 { grid-template-columns: 1fr } }
-
-    .metrics-row { display:flex; gap:12px }
-    .metric { flex:1; padding:12px; border-radius:10px; display:flex; flex-direction:column; gap:6px; }
-    .metric .num { font-weight:700; font-size:18px }
-    .metric .label { color:var(--muted); font-size:13px }
-
-    /* ---------- Tasks area ---------- */
-    .two-col { display:grid; grid-template-columns:1fr 360px; gap:20px; margin-top:14px }
-    @media (max-width:920px){ .two-col { grid-template-columns:1fr } }
-
-    .tasks-list { display:flex; flex-direction:column; gap:12px; margin-top:10px }
-
-    .task-card { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); transition: transform var(--ease), box-shadow var(--ease) }
-    .task-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(11,18,32,0.06) }
-    .task-main { flex:1 }
-    .task-title { font-weight:600; margin-bottom:6px }
-    .task-meta { color:var(--muted); font-size:13px }
-
-    .task-actions { display:flex; gap:8px; align-items:center }
-
-    /* ---------- Quick-add form (right column) ---------- */
-    .form-row { display:flex; flex-direction:column; gap:8px; margin-top:8px }
-    .lbl { font-size:13px; font-weight:600; color:var(--text); }
-    .hint { font-size:12px; color:var(--muted) }
-    .input, textarea, select { width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); font-size:14px; background:transparent }
-    textarea { min-height:88px; resize:vertical }
-
-    .controls-row { display:flex; gap:8px; justify-content:flex-end; margin-top:10px }
-
-    /* ---------- Matrix ---------- */
-    .matrix-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:14px }
-    @media (max-width:768px){ .matrix-grid { grid-template-columns:1fr } }
-    .quadrant { min-height:160px; padding:14px; border-radius:10px; border:1px solid var(--border); background:var(--surface); transition: box-shadow var(--ease) }
-    .quadrant:hover { box-shadow: 0 12px 30px rgba(11,18,32,0.06) }
-    .quadrant h3 { margin:0 0 8px; font-size:14px }
-
-    /* ---------- Focus timer ---------- */
-    .focus { display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; padding:12px }
-    .timer { font-size:32px; font-weight:700 }
-
-    /* ---------- Skeleton & spinner ---------- */
-    .skeleton { background: linear-gradient(90deg, #eef2fb 0%, #f6f8fc 50%, #eef2fb 100%); background-size:200% 100%; animation:pulse 1.6s infinite; border-radius:8px; }
-    .skeleton.h-40{ height:40px }
-    @keyframes pulse{ 0%{ background-position:200% 0 } 100%{ background-position:-200% 0 } }
-    .spinner { border:3px solid #e6eefc; border-top-color:var(--accent); border-radius:50%; width:18px; height:18px; animation:spin .8s linear infinite }
-    @keyframes spin{ to{ transform:rotate(360deg) } }
-
-    /* ---------- Toasts / modal / drawer (UI kit) ---------- */
-    .pb-toasts { position:fixed; top:20px; right:20px; display:flex; flex-direction:column; gap:10px; z-index:9999 }
-    .pb-toast { min-width:220px; padding:12px 14px; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--success); border-radius:10px; box-shadow:var(--shadow-sm); display:flex; justify-content:space-between; align-items:center }
-    .pb-toast--error { border-left-color:var(--danger) }
-
-    .pb-overlay { position:fixed; inset:0; background:rgba(8,11,20,0.42); display:flex; align-items:center; justify-content:center; z-index:1200 }
-    .pb-modal { width:720px; max-width:95%; background:var(--surface); border-radius:12px; padding:20px; border:1px solid var(--border); box-shadow: 0 20px 50px rgba(3,7,18,0.12) }
-    .pb-drawer { position:fixed; right:0; top:0; height:100%; width:480px; max-width:100%; background:var(--surface); box-shadow:-24px 0 48px rgba(3,7,18,0.08); z-index:1200; padding:18px }
-
-    /* ---------- Buttons (Linear-style) ---------- */
-    .btn { display:inline-flex; align-items:center; gap:8px; border-radius:8px; padding:8px 12px; cursor:pointer; border:0; font-weight:600; transition:transform .06s var(--ease) }
-    .btn:active{ transform:translateY(1px) }
-    .btn-primary { background:var(--accent); color:white; box-shadow:0 8px 24px rgba(59,130,246,0.12) }
-    .btn-primary:hover { background:var(--accent-700) }
-    .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text) }
-    .btn-small { padding:6px 10px; font-size:13px }
-
-    /* ---------- Utilities ---------- */
-    .muted { color:var(--muted) }
-    .flex { display:flex } .stack { display:flex; flex-direction:column }
-    .ml-auto { margin-left:auto }
-    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; padding:0; margin:-1px }
+    /* ---------------- Reset ---------------- */
+    *{box-sizing:border-box} html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-size:15px}
+    a{color:inherit} img{max-width:100%;display:block}
+    /* ---------------- Layout ---------------- */
+    .app{display:grid;grid-template-columns:260px 1fr;gap:28px;max-width:1200px;margin:28px auto;padding:0 20px}
+    @media(max-width:920px){ .app{grid-template-columns:1fr;margin:0;padding:0 12px} .sidebar{display:none} }
+    /* ---------------- Sidebar ---------------- */
+    .sidebar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow-sm);height:calc(100vh - 56px);position:sticky;top:28px;display:flex;flex-direction:column;gap:12px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .brand-title{font-weight:700;font-size:16px}
+    .brand-sub{font-size:12px;color:var(--muted)}
+    .nav-section{margin-top:12px;font-size:12px;color:var(--muted);letter-spacing:0.6px}
+    .nav-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+    .nav-item{padding:10px 12px;border-radius:8px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:10px;transition:all var(--ease);font-weight:500}
+    .nav-item:hover{background:var(--surface-elev);color:var(--text)}
+    .nav-item.active{color:var(--accent);background:linear-gradient(90deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02));box-shadow:inset 3px 0 0 var(--accent);font-weight:700}
+    .version{margin-top:auto;font-size:12px;color:var(--muted)}
+    /* ---------------- Main ---------------- */
+    .main{min-height:70vh;padding-bottom:40px}
+    .topbar{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .title{font-size:22px;font-weight:700;margin:0}
+    .subtitle{color:var(--muted);font-size:13px}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    /* ---------------- Cards & grid ---------------- */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow-sm)}
+    .grid{display:grid;gap:14px}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    @media(max-width:900px){ .grid-3{grid-template-columns:1fr} }
+    .metrics-row{display:flex;gap:12px}
+    .metric{flex:1;padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:6px}
+    .num{font-weight:700;font-size:18px} .label{color:var(--muted);font-size:13px}
+    /* ---------------- Tasks ---------------- */
+    .two-col{display:grid;grid-template-columns:1fr 360px;gap:20px;margin-top:14px}
+    @media(max-width:920px){ .two-col{grid-template-columns:1fr} }
+    .tasks-list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+    .task-card{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);transition:transform var(--ease),box-shadow var(--ease)}
+    .task-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(11,18,32,0.06)}
+    .task-main{flex:1}
+    .task-title{font-weight:600;margin-bottom:6px}
+    .task-meta{color:var(--muted);font-size:13px}
+    .task-actions{display:flex;gap:8px;align-items:center}
+    /* Legacy-friendly classes (common hooks) */
+    .task-row{ /* alias for older code */ } .task-item{ } .task-list-container{ }
+    /* ---------------- Form ---------------- */
+    .form-row{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .lbl{font-size:13px;font-weight:600;color:var(--text)} .hint{font-size:12px;color:var(--muted)}
+    .input, textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;background:transparent}
+    textarea{min-height:88px;resize:vertical}
+    .controls-row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+    /* ---------------- Matrix ---------------- */
+    .matrix-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+    @media(max-width:768px){ .matrix-grid{grid-template-columns:1fr} }
+    .quadrant{min-height:160px;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);transition:box-shadow var(--ease)}
+    .quadrant:hover{box-shadow:0 12px 30px rgba(11,18,32,0.06)}
+    .quadrant h3{margin:0 0 8px;font-size:14px}
+    /* data-attribute used by some scripts */ 
+    .quadrant[data-q]{ }
+    /* ---------------- Focus timer ---------------- */
+    .focus{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;padding:12px}
+    .timer{font-size:32px;font-weight:700}
+    /* ---------------- Skeleton & spinner ---------------- */
+    .skeleton{background:linear-gradient(90deg,#eef2fb 0%,#f6f8fc 50%,#eef2fb 100%);background-size:200% 100%;animation:pulse 1.6s infinite;border-radius:8px}
+    .skeleton.h-40{height:40px}
+    @keyframes pulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .spinner{border:3px solid #e6eefc;border-top-color:var(--accent);border-radius:50%;width:18px;height:18px;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    /* ---------------- UI kit (toasts, modal, drawer) ---------------- */
+    .pb-toasts{position:fixed;top:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:9999}
+    .pb-toast{min-width:220px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--success);border-radius:10px;box-shadow:var(--shadow-sm);display:flex;justify-content:space-between;align-items:center}
+    .pb-toast--error{border-left-color:var(--danger)}
+    .pb-overlay{position:fixed;inset:0;background:rgba(8,11,20,0.42);display:flex;align-items:center;justify-content:center;z-index:1200}
+    .pb-modal{width:720px;max-width:95%;background:var(--surface);border-radius:12px;padding:20px;border:1px solid var(--border);box-shadow:0 20px 50px rgba(3,7,18,0.12)}
+    .pb-drawer{position:fixed;right:0;top:0;height:100%;width:480px;max-width:100%;background:var(--surface);box-shadow:-24px 0 48px rgba(3,7,18,0.08);z-index:1200;padding:18px}
+    /* ---------------- Buttons ---------------- */
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:8px;padding:8px 12px;cursor:pointer;border:0;font-weight:600;transition:transform .06s var(--ease)}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--accent);color:white;box-shadow:0 8px 24px rgba(59,130,246,0.12)}
+    .btn-primary:hover{background:var(--accent-700)}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+    .btn-small{padding:6px 10px;font-size:13px}
+    /* ---------------- Utilities ---------------- */
+    .muted{color:var(--muted)} .flex{display:flex} .stack{display:flex;flex-direction:column}
+    .ml-auto{margin-left:auto} .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px}
   </style>
 </head>
-
 <body>
-  <!-- Toast container (UI kit) -->
+  <!-- Toast container -->
   <div class="pb-toasts" id="pbToasts"></div>
 
-  <!-- Top header (mobile visible) -->
+  <!-- Mobile header -->
   <div style="display:flex;align-items:center;gap:12px;max-width:1200px;margin:18px auto;padding:0 12px;">
     <div style="display:flex;align-items:center;gap:12px">
       <img src="/images/PrioBox - Icon.png" alt="PrioBox" style="height:40px;width:40px;border-radius:8px;object-fit:contain">
       <div>
-        <div style="font-weight:700">PrioBox</div>
+        <div class="brand-title">PrioBox</div>
         <div class="muted" style="font-size:12px">Focus what matters</div>
       </div>
     </div>
@@ -163,7 +130,7 @@
   </div>
 
   <div class="app" role="application" aria-label="PrioBox app shell">
-    <!-- SIDEBAR -->
+    <!-- Sidebar -->
     <aside class="sidebar" aria-label="Primary navigation">
       <div class="logo">
         <img src="/images/PrioBox - Primary.png" alt="PrioBox">
@@ -175,33 +142,31 @@
 
       <div class="nav-section">PLAN</div>
       <div class="nav-list" role="navigation" aria-label="Plan">
-        <div class="nav-item active" data-route="dashboard">🏠 Dashboard</div>
-        <div class="nav-item" data-route="matrix">🗂 Matrix</div>
+        <div class="nav-item active" data-route="dashboard" id="nav-dashboard">🏠 Dashboard</div>
+        <div class="nav-item" data-route="matrix" id="nav-matrix">🗂 Matrix</div>
       </div>
 
       <div class="nav-section">DO</div>
       <div class="nav-list" role="navigation" aria-label="Do">
-        <div class="nav-item" data-route="focus">🔥 Focus Mode</div>
+        <div class="nav-item" data-route="focus" id="nav-focus">🔥 Focus Mode</div>
       </div>
 
       <div class="nav-section">TRACK</div>
       <div class="nav-list" role="navigation" aria-label="Track">
-        <div class="nav-item" data-route="insights">📊 Insights</div>
-        <div class="nav-item" data-route="completed">✅ Completed</div>
+        <div class="nav-item" data-route="insights" id="nav-insights">📊 Insights</div>
+        <div class="nav-item" data-route="completed" id="nav-completed">✅ Completed</div>
       </div>
 
       <div class="version">Version: 0.9.1</div>
     </aside>
 
-    <!-- MAIN -->
+    <!-- Main -->
     <main class="main" id="mainContent">
-      <!-- Topbar -->
       <div class="topbar">
         <div>
           <div class="title">Today's Focus</div>
           <div class="subtitle muted">Your prioritized list & quick actions</div>
         </div>
-
         <div class="controls">
           <button class="btn btn-ghost btn-small" id="filtersBtn">Filters</button>
           <button class="btn btn-primary btn-small" id="startFocusBtn">Start Focus</button>
@@ -209,7 +174,7 @@
       </div>
 
       <!-- Metrics -->
-      <section class="card">
+      <section class="card" id="metricsRow">
         <div class="grid grid-3 metrics-row">
           <div class="metric">
             <div class="num" id="dueTodayVal">0</div>
@@ -228,27 +193,27 @@
 
       <!-- Tasks area + Quick Add -->
       <div class="two-col">
-        <!-- LEFT: Tasks list -->
+        <!-- LEFT -->
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="muted">Today's Priority Queue • Auto-prioritized</div>
             <div class="muted">Cmd/Ctrl+K to quick add</div>
           </div>
 
-          <div class="tasks-list card" id="tasksList">
-            <!-- task rows will be inserted by your app or demo sample below -->
-            <div class="task-card" role="article">
+          <div class="tasks-list card" id="taskList" aria-live="polite">
+            <!-- Example, your app will populate actual tasks inside #taskList -->
+            <div class="task-card task-item" data-id="example-1" role="article">
               <div class="task-main">
                 <div class="task-title">Example: Prepare stakeholder update</div>
                 <div class="task-meta">Due: Nov 26 • Est: 25 min • Project: Roadmap</div>
               </div>
               <div class="task-actions">
-                <button class="btn btn-primary btn-small">Start</button>
-                <button class="btn btn-ghost btn-small">...</button>
+                <button class="btn btn-primary btn-small task-start" data-action="start">Start</button>
+                <button class="btn btn-ghost btn-small task-more" data-action="more">•••</button>
               </div>
             </div>
 
-            <!-- Loading skeleton (hidden by default) -->
+            <!-- Loading skeleton (use window.prioShowLoading(true)) -->
             <div id="tasksSkeleton" style="display:none">
               <div class="task-card"><div style="flex:1"><div class="skeleton h-40"></div></div></div>
               <div class="task-card"><div style="flex:1"><div class="skeleton h-40"></div></div></div>
@@ -269,54 +234,54 @@
             </div>
 
             <div class="matrix-grid" id="matrixGrid" style="margin-top:12px">
-              <div class="quadrant" data-q="do-first"><h3>Do First</h3><div class="muted">High impact • Due soon</div></div>
-              <div class="quadrant" data-q="schedule"><h3>Schedule</h3><div class="muted">Important • Not urgent</div></div>
-              <div class="quadrant" data-q="delegate"><h3>Delegate</h3><div class="muted">Low impact • Urgent</div></div>
-              <div class="quadrant" data-q="eliminate"><h3>Eliminate</h3><div class="muted">Low impact • Not urgent</div></div>
+              <div class="quadrant" data-q="do-first" id="quad-do-first"><h3>Do First</h3><div class="muted">High impact • Due soon</div></div>
+              <div class="quadrant" data-q="schedule" id="quad-schedule"><h3>Schedule</h3><div class="muted">Important • Not urgent</div></div>
+              <div class="quadrant" data-q="delegate" id="quad-delegate"><h3>Delegate</h3><div class="muted">Low impact • Urgent</div></div>
+              <div class="quadrant" data-q="eliminate" id="quad-eliminate"><h3>Eliminate</h3><div class="muted">Low impact • Not urgent</div></div>
             </div>
           </div>
         </div>
 
-        <!-- RIGHT: Quick-add + Focus -->
+        <!-- RIGHT -->
         <aside>
-          <div class="card">
+          <div class="card" id="quickAddCard">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div style="font-weight:700">Quick Add Task</div>
               <div class="muted" style="font-size:13px">Fast capture</div>
             </div>
 
-            <div class="form-row" style="margin-top:10px">
+            <form id="taskForm" class="form-row" onsubmit="return false;" aria-labelledby="taskFormLabel">
               <div>
-                <label class="lbl" for="taskTitle">Title <span class="hint">(required)</span></label>
-                <input id="taskTitle" class="input" placeholder="What needs attention?">
+                <label class="lbl" id="taskFormLabel" for="taskTitle">Title <span class="hint">(required)</span></label>
+                <input id="taskTitle" name="title" class="input" placeholder="What needs attention?">
               </div>
 
               <div>
                 <label class="lbl" for="taskDesc">Description <span class="hint">(optional)</span></label>
-                <textarea id="taskDesc" placeholder="Add helpful notes or acceptance criteria"></textarea>
+                <textarea id="taskDesc" name="desc" placeholder="Add helpful notes or acceptance criteria"></textarea>
               </div>
 
               <div style="display:flex;gap:8px">
                 <div style="flex:1">
                   <label class="lbl" for="estTime">Estimate (min)</label>
-                  <input id="estTime" class="input" type="number" min="1" placeholder="25">
+                  <input id="estTime" name="est" class="input" type="number" min="1" placeholder="25">
                 </div>
                 <div style="width:140px">
                   <label class="lbl" for="dueDate">Due</label>
-                  <input id="dueDate" class="input" type="date">
+                  <input id="dueDate" name="due" class="input" type="date">
                 </div>
               </div>
 
               <div>
                 <label class="lbl" for="tagsInput">Tags / Project</label>
-                <input id="tagsInput" class="input" placeholder="marketing, roadmap">
+                <input id="tagsInput" name="tags" class="input" placeholder="marketing, roadmap">
               </div>
 
               <div class="controls-row">
                 <button class="btn btn-ghost btn-small" id="clearTaskBtn">Clear</button>
-                <button class="btn btn-primary btn-small" id="saveTaskBtn">Add Task</button>
+                <button class="btn btn-primary btn-small save-btn" id="saveTaskBtn">Add Task</button>
               </div>
-            </div>
+            </form>
           </div>
 
           <div class="card" style="margin-top:12px">
@@ -349,12 +314,11 @@
     </main>
   </div>
 
-  <!-- ---------- Inline JS: UI kit utilities + compatibility hooks ---------- -->
+  <!-- Inline JS: compatibility bridge + UI kit -->
   <script>
-    /* ---------- PB UI Utilities (toasts, modal, drawer) ---------- */
     (function(){
+      // Expose pb utilities
       window.pb = window.pb || {};
-      // Toast container
       const toastsEl = document.getElementById('pbToasts');
 
       window.pb.toast = function(message, opts){
@@ -374,7 +338,6 @@
         return div;
       }
 
-      // Modal open/close
       window.pb.openModal = function(innerHtml){
         const overlay = document.createElement('div'); overlay.className='pb-overlay';
         const modal = document.createElement('div'); modal.className='pb-modal'; modal.innerHTML = innerHtml;
@@ -383,129 +346,148 @@
         return { overlay, modal };
       }
 
-      // Drawer open
       window.pb.openDrawer = function(innerHtml){
         const drawer = document.createElement('div'); drawer.className='pb-drawer';
         drawer.innerHTML = innerHtml; document.body.appendChild(drawer);
         return { drawer };
       }
 
-    })();
-
-    /* ---------- Preserve & expose app hooks (non-destructive) ---------- */
-    // 1) Nav active toggle + route event
-    document.querySelectorAll('.nav-item').forEach(item=>{
-      item.addEventListener('click', function(){
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-        this.classList.add('active');
-        const route = this.getAttribute('data-route');
-        // Emit route change for your existing app logic to pick up
-        window.dispatchEvent(new CustomEvent('prio:route', { detail: { route } }));
+      // ---------------- Compatibility Bridge ----------------
+      // 1) Nav clicks -> emit prio:route (preserve original route event)
+      document.querySelectorAll('.nav-item').forEach(item=>{
+        item.addEventListener('click', function(){
+          document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+          this.classList.add('active');
+          const route = this.getAttribute('data-route') || this.id || this.textContent.toLowerCase();
+          window.dispatchEvent(new CustomEvent('prio:route', { detail: { route } }));
+        });
       });
-    });
 
-    // 2) Quick add + save task (emits prio:saveTask)
-    const saveBtn = document.getElementById('saveTaskBtn');
-    const addTopBtn = document.getElementById('addTaskBtnTop');
-    const clearBtn = document.getElementById('clearTaskBtn');
+      // 2) Save task: multiple selectors supported (legacy .save-btn, #saveTaskBtn)
+      function emitSaveTask(){
+        const titleEl = document.getElementById('taskTitle');
+        const title = titleEl ? titleEl.value.trim() : '';
+        if(!title){ window.pb.toast('Please provide a title', { type: 'error' }); return; }
+        const payload = {
+          title: title,
+          desc: document.getElementById('taskDesc') ? document.getElementById('taskDesc').value.trim() : '',
+          est: document.getElementById('estTime') ? document.getElementById('estTime').value : '',
+          due: document.getElementById('dueDate') ? document.getElementById('dueDate').value : '',
+          tags: document.getElementById('tagsInput') ? document.getElementById('tagsInput').value : ''
+        };
+        // Emit both modern & legacy custom events
+        window.dispatchEvent(new CustomEvent('prio:saveTask', { detail: payload }));
+        window.dispatchEvent(new CustomEvent('saveTask', { detail: payload })); // legacy alias
+        window.pb.toast('Task added');
+        // optimistic clear
+        if(document.getElementById('taskForm')) document.getElementById('taskForm').reset();
+      }
 
-    function showToast(msg, type){ window.pb.toast(msg, { type: type || 'success' }) }
+      document.querySelectorAll('.save-btn, #saveTaskBtn').forEach(btn=>{
+        btn.addEventListener('click', emitSaveTask);
+      });
+      // Ensure form submit also works
+      const form = document.getElementById('taskForm');
+      if(form){ form.addEventListener('submit', function(ev){ ev.preventDefault(); emitSaveTask(); }); }
 
-    saveBtn.addEventListener('click', function(){
-      const title = document.getElementById('taskTitle').value.trim();
-      if(!title){ showToast('Please provide a title', 'error'); return; }
-      const payload = {
-        title: title,
-        desc: document.getElementById('taskDesc').value.trim(),
-        est: document.getElementById('estTime').value,
-        due: document.getElementById('dueDate').value,
-        tags: document.getElementById('tagsInput').value
+      // 3) Clear button
+      const clearBtn = document.getElementById('clearTaskBtn');
+      if(clearBtn){
+        clearBtn.addEventListener('click', function(){
+          if(document.getElementById('taskForm')) document.getElementById('taskForm').reset();
+          window.pb.toast('Cleared');
+        });
+      }
+
+      // 4) Task action delegation (start, edit, delete, complete) - emit prio:taskAction with details
+      document.body.addEventListener('click', function(ev){
+        const actionBtn = ev.target.closest('[data-action], .task-start, .task-edit, .task-delete, .task-more, .task-complete');
+        if(!actionBtn) return;
+        let action = actionBtn.getAttribute('data-action') || (actionBtn.classList.contains('task-start') ? 'start' : (actionBtn.classList.contains('task-edit') ? 'edit' : (actionBtn.classList.contains('task-delete') ? 'delete' : (actionBtn.classList.contains('task-complete') ? 'complete' : 'more'))));
+        // find the closest task element
+        const taskEl = actionBtn.closest('.task-card, .task-item, .task-row');
+        const taskId = taskEl ? (taskEl.getAttribute('data-id') || taskEl.id || null) : null;
+        // Emit event for your app to handle
+        window.dispatchEvent(new CustomEvent('prio:taskAction', { detail: { action, taskId, origin: actionBtn } }));
+        // legacy alias
+        window.dispatchEvent(new CustomEvent('taskAction', { detail: { action, taskId } }));
+      });
+
+      // 5) Export / Sync buttons -> emit app-level events
+      document.getElementById('exportTasks')?.addEventListener('click', function(){ window.dispatchEvent(new CustomEvent('prio:exportCSV')); window.pb.toast('Export requested'); });
+      document.getElementById('syncCalendar')?.addEventListener('click', function(){ window.dispatchEvent(new CustomEvent('prio:syncCalendar')); window.pb.toast('Calendar sync requested'); });
+
+      // 6) Loading skeleton helper
+      window.prioShowLoading = function(show){
+        const sk = document.getElementById('tasksSkeleton');
+        const list = document.getElementById('taskList');
+        if(!sk || !list) return;
+        if(show){ sk.style.display = 'block'; list.style.opacity = '0.5' } else { sk.style.display = 'none'; list.style.opacity = '1' }
+      }
+
+      // 7) Metric updates listener (prio:updateMetrics)
+      window.addEventListener('prio:updateMetrics', function(e){
+        const d = e.detail || {};
+        document.getElementById('dueTodayVal') && (document.getElementById('dueTodayVal').textContent = d.dueToday ?? 0);
+        document.getElementById('overdueVal') && (document.getElementById('overdueVal').textContent = d.overdue ?? 0);
+        document.getElementById('completedWeekVal') && (document.getElementById('completedWeekVal').textContent = d.completedWeek ?? 0);
+        document.getElementById('insCompleted') && (document.getElementById('insCompleted').textContent = d.completedWeek ?? 0);
+        document.getElementById('topProject') && (document.getElementById('topProject').textContent = d.topProject || '—');
+      });
+
+      // 8) Focus timer demo (non-invasive)
+      (function(){
+        const el = document.getElementById('focusTimer');
+        const sessionsEl = document.getElementById('sessionsCount');
+        let seconds = 25*60, interval = null, sessions = 0;
+        function render(){ if(el) el.textContent = String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0') }
+        render();
+        document.getElementById('playFocus')?.addEventListener('click', function(){
+          if(interval) return;
+          interval = setInterval(()=>{ if(seconds<=0){ clearInterval(interval); interval=null; sessions++; sessionsEl.textContent = sessions; window.pb.toast('Focus session complete'); seconds = 25*60; render(); return; } seconds--; render(); }, 1000);
+        });
+        document.getElementById('pauseFocus')?.addEventListener('click', function(){ if(interval){ clearInterval(interval); interval=null } });
+        document.getElementById('stopFocus')?.addEventListener('click', function(){ if(interval){ clearInterval(interval); interval=null } seconds = 25*60; render(); });
+      })();
+
+      // 9) Quick add top button
+      document.getElementById('addTaskBtnTop')?.addEventListener('click', function(){ document.getElementById('taskTitle')?.focus(); window.scrollTo({top:0,behavior:'smooth'}); });
+
+      // 10) Keyboard shortcut for quick-add (Cmd/Ctrl+K)
+      window.addEventListener('keydown', function(ev){ if((ev.ctrlKey||ev.metaKey) && ev.key.toLowerCase()==='k'){ ev.preventDefault(); document.getElementById('taskTitle')?.focus(); } });
+
+      // 11) Open matrix in modal
+      document.getElementById('openMatrixBtn')?.addEventListener('click', function(){
+        const content = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-weight:700">Priority Matrix</div>
+            <div class="muted">Drag tasks between quadrants</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Do First</div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Schedule</div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Delegate</div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Eliminate</div>
+          </div>
+        `;
+        window.pb.openModal(content);
+        // Emit event so your app can populate matrix content if needed
+        window.dispatchEvent(new CustomEvent('prio:openMatrix'));
+      });
+
+      // 12) Expose legacy selectors to window for debugging
+      window._priobox_els = {
+        taskList: document.getElementById('taskList'),
+        saveBtn: document.getElementById('saveTaskBtn'),
+        taskForm: document.getElementById('taskForm'),
+        matrixGrid: document.getElementById('matrixGrid'),
+        quads: document.querySelectorAll('.quadrant')
       };
-      // Emit existing event your app already uses (keeps logic intact)
-      window.dispatchEvent(new CustomEvent('prio:saveTask', { detail: payload }));
-      // optimistic UI feedback
-      showToast('Task added');
-      // clear inputs
-      document.getElementById('taskTitle').value = '';
-      document.getElementById('taskDesc').value = '';
-      document.getElementById('estTime').value = '';
-      document.getElementById('dueDate').value = '';
-      document.getElementById('tagsInput').value = '';
-    });
 
-    addTopBtn.addEventListener('click', function(){
-      document.getElementById('taskTitle').focus();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+      // done
+      console.log('PrioBox UI Bridge initialized — visual overhaul loaded. Bridge supports prio:saveTask, prio:taskAction, prio:updateMetrics, prio:route, prioShowLoading, prio:exportCSV, prio:syncCalendar, prio:openMatrix');
 
-    clearBtn.addEventListener('click', function(){
-      document.getElementById('taskTitle').value = '';
-      document.getElementById('taskDesc').value = '';
-      document.getElementById('estTime').value = '';
-      document.getElementById('dueDate').value = '';
-      document.getElementById('tagsInput').value = '';
-      showToast('Cleared');
-    });
-
-    // 3) Loading skeleton helper (call prioShowLoading(true/false))
-    window.prioShowLoading = function(show){
-      const sk = document.getElementById('tasksSkeleton');
-      const list = document.getElementById('tasksList');
-      if(!sk || !list) return;
-      if(show){ sk.style.display='block'; list.style.opacity = '0.5' } else { sk.style.display='none'; list.style.opacity='1' }
-    }
-
-    // 4) Accept metric updates from your app
-    window.addEventListener('prio:updateMetrics', function(e){
-      const d = e.detail || {};
-      document.getElementById('dueTodayVal').textContent = d.dueToday ?? 0;
-      document.getElementById('overdueVal').textContent = d.overdue ?? 0;
-      document.getElementById('completedWeekVal').textContent = d.completedWeek ?? 0;
-      document.getElementById('insCompleted').textContent = d.completedWeek ?? 0;
-      document.getElementById('topProject').textContent = d.topProject || '—';
-    });
-
-    // 5) Focus timer (demo-level; your app can hook its own logic)
-    (function(){
-      const el = document.getElementById('focusTimer');
-      const sessionsEl = document.getElementById('sessionsCount');
-      let seconds = 25*60, interval = null, sessions = 0;
-      function render(){ el.textContent = String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0') }
-      render();
-      document.getElementById('playFocus').addEventListener('click', function(){
-        if(interval) return;
-        interval = setInterval(()=>{ if(seconds<=0){ clearInterval(interval); interval=null; sessions++; sessionsEl.textContent = sessions; window.pb.toast('Focus session complete'); seconds = 25*60; render(); return; } seconds--; render(); }, 1000);
-      });
-      document.getElementById('pauseFocus').addEventListener('click', function(){ if(interval){ clearInterval(interval); interval=null } });
-      document.getElementById('stopFocus').addEventListener('click', function(){ if(interval){ clearInterval(interval); interval=null } seconds = 25*60; render(); });
     })();
-
-    // 6) Keyboard shortcut for quick-add (Cmd/Ctrl+K)
-    window.addEventListener('keydown', function(ev){
-      if((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k'){ ev.preventDefault(); document.getElementById('taskTitle').focus(); }
-    });
-
-    // 7) Expose pb.openMatrix button to open a modal showing full matrix (example usage)
-    document.getElementById('openMatrixBtn').addEventListener('click', function(){
-      const content = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-weight:700">Priority Matrix</div>
-          <div class="muted">Drag tasks between quadrants</div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-          <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Do First</div>
-          <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Schedule</div>
-          <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Delegate</div>
-          <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Eliminate</div>
-        </div>
-      `;
-      window.pb.openModal(content);
-    });
-
-    // 8) Optional: wire export & calendar buttons to emit events so your app can handle them
-    document.getElementById('exportTasks').addEventListener('click', function(){ window.dispatchEvent(new CustomEvent('prio:exportCSV')); showToast('Export requested'); });
-    document.getElementById('syncCalendar').addEventListener('click', function(){ window.dispatchEvent(new CustomEvent('prio:syncCalendar')); showToast('Calendar sync requested'); });
-
   </script>
 </body>
 </html>
