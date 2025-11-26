@@ -67,7 +67,7 @@
     .task-meta{color:var(--muted);font-size:13px}
     .task-actions{display:flex;gap:8px;align-items:center}
     /* Legacy-friendly classes (common hooks) */
-    .task-row{ /* alias for older code */ } .task-item{ } .task-list-container{ }
+    .task-row{ } .task-item{ } .task-list-container{ }
     /* ---------------- Form ---------------- */
     .form-row{display:flex;flex-direction:column;gap:8px;margin-top:8px}
     .lbl{font-size:13px;font-weight:600;color:var(--text)} .hint{font-size:12px;color:var(--muted)}
@@ -80,8 +80,9 @@
     .quadrant{min-height:160px;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);transition:box-shadow var(--ease)}
     .quadrant:hover{box-shadow:0 12px 30px rgba(11,18,32,0.06)}
     .quadrant h3{margin:0 0 8px;font-size:14px}
-    /* data-attribute used by some scripts */ 
-    .quadrant[data-q]{ }
+    .quadrant .quad-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .quad-task{padding:8px;border-radius:8px;border:1px solid var(--border);background:linear-gradient(180deg,#fff,#fcfdff);cursor:grab}
+    .quad-task.dragging{opacity:0.5}
     /* ---------------- Focus timer ---------------- */
     .focus{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;padding:12px}
     .timer{font-size:32px;font-weight:700}
@@ -201,8 +202,8 @@
           </div>
 
           <div class="tasks-list card" id="taskList" aria-live="polite">
-            <!-- Example, your app will populate actual tasks inside #taskList -->
-            <div class="task-card task-item" data-id="example-1" role="article">
+            <!-- example placeholder; tasks populated from JS -->
+            <div class="task-card task-item" data-id="example-1" role="article" style="display:none">
               <div class="task-main">
                 <div class="task-title">Example: Prepare stakeholder update</div>
                 <div class="task-meta">Due: Nov 26 • Est: 25 min • Project: Roadmap</div>
@@ -234,10 +235,10 @@
             </div>
 
             <div class="matrix-grid" id="matrixGrid" style="margin-top:12px">
-              <div class="quadrant" data-q="do-first" id="quad-do-first"><h3>Do First</h3><div class="muted">High impact • Due soon</div></div>
-              <div class="quadrant" data-q="schedule" id="quad-schedule"><h3>Schedule</h3><div class="muted">Important • Not urgent</div></div>
-              <div class="quadrant" data-q="delegate" id="quad-delegate"><h3>Delegate</h3><div class="muted">Low impact • Urgent</div></div>
-              <div class="quadrant" data-q="eliminate" id="quad-eliminate"><h3>Eliminate</h3><div class="muted">Low impact • Not urgent</div></div>
+              <div class="quadrant" data-q="do-first" id="quad-do-first"><h3>Do First</h3><div class="muted">High impact • Due soon</div><div class="quad-list"></div></div>
+              <div class="quadrant" data-q="schedule" id="quad-schedule"><h3>Schedule</h3><div class="muted">Important • Not urgent</div><div class="quad-list"></div></div>
+              <div class="quadrant" data-q="delegate" id="quad-delegate"><h3>Delegate</h3><div class="muted">Low impact • Urgent</div><div class="quad-list"></div></div>
+              <div class="quadrant" data-q="eliminate" id="quad-eliminate"><h3>Eliminate</h3><div class="muted">Low impact • Not urgent</div><div class="quad-list"></div></div>
             </div>
           </div>
         </div>
@@ -314,180 +315,412 @@
     </main>
   </div>
 
-  <!-- Inline JS: compatibility bridge + UI kit -->
+  <!-- Inline JS: full client-side functionality + compatibility bridge -->
   <script>
-    (function(){
-      // Expose pb utilities
-      window.pb = window.pb || {};
-      const toastsEl = document.getElementById('pbToasts');
+  /**************************************************************************
+   * PrioBox Inline JS
+   * - TaskStore with LocalStorage driver (can be replaced/swapped)
+   * - Renderers for task list and matrix
+   * - CRUD: add, edit, delete, complete
+   * - Drag & drop between quadrants
+   * - Metrics calculation & events (prio:updateMetrics)
+   * - Export CSV, calendar sync stub
+   * - Focus timer
+   * - Compatibility events (prio:saveTask, prio:taskAction, prio:route, etc.)
+   **************************************************************************/
 
-      window.pb.toast = function(message, opts){
-        opts = opts || {};
-        const type = opts.type || 'success';
-        const timeout = typeof opts.timeout === 'number' ? opts.timeout : 3500;
-        const div = document.createElement('div');
-        div.className = 'pb-toast' + (type==='error' ? ' pb-toast--error' : '');
-        div.innerHTML = '<div style="flex:1">'+message+'</div>';
-        const close = document.createElement('button');
-        close.className = 'btn btn-ghost btn-small';
-        close.textContent = 'Close';
-        close.addEventListener('click', ()=>{ try{ div.remove() } catch(e){} });
-        div.appendChild(close);
-        toastsEl.appendChild(div);
-        if(timeout) setTimeout(()=>{ try{ div.remove() } catch(e){} }, timeout);
-        return div;
+  (function(){
+    /* ---------------- Utilities ---------------- */
+    const uid = (prefix='t') => prefix + Math.random().toString(36).slice(2,9);
+    const nowISO = () => new Date().toISOString();
+    const parseDate = s => s ? new Date(s) : null;
+    const formatDateShort = d => {
+      if(!d) return '—';
+      const dt = new Date(d);
+      return dt.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+    };
+
+    /* ---------------- Storage driver ---------------- */
+    class LocalStorageDriver {
+      constructor(key='priobox_tasks'){ this.key = key; }
+      async list(){ try { const raw = localStorage.getItem(this.key); return raw ? JSON.parse(raw) : []; } catch(e){ console.error(e); return []; } }
+      async saveAll(items){ localStorage.setItem(this.key, JSON.stringify(items)); return true; }
+    }
+
+    /* ---------------- TaskStore ---------------- */
+    class TaskStore {
+      constructor(driver){ this.driver = driver; this.tasks = []; }
+      async init(){ this.tasks = await this.driver.list(); if(!Array.isArray(this.tasks)) this.tasks = []; return this.tasks; }
+      async add(task){ task.id = task.id || uid('t'); task.createdAt = task.createdAt || nowISO(); if(!task.quadrant) task.quadrant = 'do-first'; task.completed = !!task.completed; this.tasks.unshift(task); await this.driver.saveAll(this.tasks); this._emitUpdate(); return task; }
+      async update(id, patch){ const i = this.tasks.findIndex(t => t.id === id); if(i===-1) return null; this.tasks[i] = Object.assign({}, this.tasks[i], patch); await this.driver.saveAll(this.tasks); this._emitUpdate(); return this.tasks[i]; }
+      async delete(id){ this.tasks = this.tasks.filter(t => t.id !== id); await this.driver.saveAll(this.tasks); this._emitUpdate(); return true; }
+      async list(){ return this.tasks.slice(); }
+      async find(id){ return this.tasks.find(t => t.id === id) || null; }
+      async move(id, quadrant){ const t = await this.find(id); if(!t) return null; t.quadrant = quadrant; await this.update(id, t); return t; }
+      async toggleComplete(id){ const t = await this.find(id); if(!t) return null; t.completed = !t.completed; await this.update(id, { completed: t.completed }); return t; }
+      _emitUpdate(){
+        // emit an internal event for re-renderers
+        window.dispatchEvent(new CustomEvent('priobox:storeUpdated', { detail: { count: this.tasks.length } }));
+        // also emit prio:updateMetrics (legacy/consumers)
+        const metrics = computeMetrics(this.tasks);
+        window.dispatchEvent(new CustomEvent('prio:updateMetrics', { detail: metrics }));
+      }
+    }
+
+    /* ---------------- Metrics computation ---------------- */
+    function computeMetrics(tasks){
+      const today = new Date(); today.setHours(0,0,0,0);
+      let dueToday = 0, overdue = 0, completedWeek = 0;
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+      const projectCounts = {};
+      tasks.forEach(t => {
+        if(t.completed && t.completedAt){
+          const ca = new Date(t.completedAt);
+          if(ca >= weekAgo) completedWeek++;
+        }
+        if(t.due){
+          const dd = new Date(t.due);
+          const dday = new Date(dd.getFullYear(), dd.getMonth(), dd.getDate());
+          if(dday.getTime() === today.getTime()) dueToday++;
+          if(dday < today && !t.completed) overdue++;
+        }
+        if(t.tags){
+          t.tags.split(',').map(s=>s.trim()).filter(Boolean).forEach(tag => { projectCounts[tag] = (projectCounts[tag]||0)+1; });
+        }
+      });
+      const topProject = Object.keys(projectCounts).sort((a,b)=>projectCounts[b]-projectCounts[a])[0] || null;
+      return { dueToday, overdue, completedWeek, topProject };
+    }
+
+    /* ---------------- App initialization ---------------- */
+    const driver = new LocalStorageDriver('priobox_tasks');
+    const store = new TaskStore(driver);
+
+    // DOM hooks
+    const els = {
+      taskList: document.getElementById('taskList'),
+      tasksSkeleton: document.getElementById('tasksSkeleton'),
+      taskForm: document.getElementById('taskForm'),
+      saveTaskBtn: document.getElementById('saveTaskBtn'),
+      clearTaskBtn: document.getElementById('clearTaskBtn'),
+      taskTitle: document.getElementById('taskTitle'),
+      taskDesc: document.getElementById('taskDesc'),
+      estTime: document.getElementById('estTime'),
+      dueDate: document.getElementById('dueDate'),
+      tagsInput: document.getElementById('tagsInput'),
+      quadLists: {
+        'do-first': document.querySelector('#quad-do-first .quad-list'),
+        'schedule': document.querySelector('#quad-schedule .quad-list'),
+        'delegate': document.querySelector('#quad-delegate .quad-list'),
+        'eliminate': document.querySelector('#quad-eliminate .quad-list')
+      },
+      focusTimer: document.getElementById('focusTimer'),
+      sessionsCount: document.getElementById('sessionsCount'),
+      dueTodayVal: document.getElementById('dueTodayVal'),
+      overdueVal: document.getElementById('overdueVal'),
+      completedWeekVal: document.getElementById('completedWeekVal'),
+      insCompleted: document.getElementById('insCompleted'),
+      topProject: document.getElementById('topProject')
+    };
+
+    // render helpers
+    function renderTaskCard(task){
+      const wrapper = document.createElement('div');
+      wrapper.className = 'task-card';
+      wrapper.setAttribute('draggable','true');
+      wrapper.dataset.id = task.id;
+      wrapper.innerHTML = `
+        <div class="task-main">
+          <div class="task-title">${escapeHtml(task.title)}</div>
+          <div class="task-meta">${task.completed ? '<strong>Completed</strong> • ' : ''}Due: ${task.due ? formatDateShort(task.due) : '—'} • Est: ${task.est || '—'} min • ${task.tags ? escapeHtml(task.tags) : 'No project'}</div>
+        </div>
+        <div class="task-actions">
+          <button class="btn btn-primary btn-small task-start" data-action="start">Start</button>
+          <button class="btn btn-ghost btn-small task-edit" data-action="edit">Edit</button>
+          <button class="btn btn-ghost btn-small task-delete" data-action="delete">Delete</button>
+        </div>
+      `;
+      // drag events for reordering or dragging to quadrants
+      wrapper.addEventListener('dragstart', (ev) => {
+        wrapper.classList.add('dragging');
+        ev.dataTransfer.setData('text/plain', task.id);
+        ev.dataTransfer.effectAllowed = 'move';
+      });
+      wrapper.addEventListener('dragend', () => wrapper.classList.remove('dragging'));
+      return wrapper;
+    }
+
+    function escapeHtml(str){
+      if(!str) return '';
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    // render full list and matrix
+    async function renderAll(){
+      // show skeleton for 200ms to feel responsive
+      prioShowLoading(true);
+      await new Promise(r => setTimeout(r, 120));
+      const tasks = await store.list();
+      // render task list (sorted: incomplete first, then by due date)
+      els.taskList.innerHTML = '';
+      const ordered = tasks.slice().sort((a,b) => {
+        if((a.completed?1:0) !== (b.completed?1:0)) return (a.completed?1:0) - (b.completed?1:0);
+        const da = a.due ? new Date(a.due).getTime() : 9e15;
+        const db = b.due ? new Date(b.due).getTime() : 9e15;
+        return da - db;
+      });
+      ordered.forEach(t => { const node = renderTaskCard(t); els.taskList.appendChild(node); });
+
+      // render quadrants
+      for(const q of Object.keys(els.quadLists)) {
+        const container = els.quadLists[q];
+        container.innerHTML = '';
+        tasks.filter(t => (t.quadrant || 'do-first') === q).forEach(t => {
+          const li = document.createElement('div');
+          li.className = 'quad-task';
+          li.draggable = true;
+          li.dataset.id = t.id;
+          li.innerHTML = `<div style="font-weight:600">${escapeHtml(t.title)}</div><div class="muted" style="font-size:13px">Due: ${t.due ? formatDateShort(t.due) : '—'}</div>`;
+          // drag events
+          li.addEventListener('dragstart', (ev)=>{ li.classList.add('dragging'); ev.dataTransfer.setData('text/plain', t.id); ev.dataTransfer.effectAllowed = 'move'; });
+          li.addEventListener('dragend', ()=>{ li.classList.remove('dragging'); });
+          container.appendChild(li);
+        });
       }
 
-      window.pb.openModal = function(innerHtml){
-        const overlay = document.createElement('div'); overlay.className='pb-overlay';
-        const modal = document.createElement('div'); modal.className='pb-modal'; modal.innerHTML = innerHtml;
-        overlay.appendChild(modal); document.body.appendChild(overlay);
-        overlay.addEventListener('click', function(ev){ if(ev.target === overlay) overlay.remove(); });
-        return { overlay, modal };
-      }
-
-      window.pb.openDrawer = function(innerHtml){
-        const drawer = document.createElement('div'); drawer.className='pb-drawer';
-        drawer.innerHTML = innerHtml; document.body.appendChild(drawer);
-        return { drawer };
-      }
-
-      // ---------------- Compatibility Bridge ----------------
-      // 1) Nav clicks -> emit prio:route (preserve original route event)
-      document.querySelectorAll('.nav-item').forEach(item=>{
-        item.addEventListener('click', function(){
-          document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-          this.classList.add('active');
-          const route = this.getAttribute('data-route') || this.id || this.textContent.toLowerCase();
-          window.dispatchEvent(new CustomEvent('prio:route', { detail: { route } }));
+      // attach quadrant drop handlers (idempotent)
+      Object.keys(els.quadLists).forEach(q => {
+        const container = els.quadLists[q];
+        ['dragenter','dragover'].forEach(evt => {
+          container.addEventListener(evt, (e)=>{ e.preventDefault(); e.dataTransfer.dropEffect = 'move'; container.classList.add('drop-target'); });
+        });
+        container.addEventListener('dragleave', ()=> container.classList.remove('drop-target'));
+        container.addEventListener('drop', async (e) => {
+          e.preventDefault(); container.classList.remove('drop-target');
+          const id = e.dataTransfer.getData('text/plain');
+          if(!id) return;
+          await store.move(id, q);
+          window.pb.toast('Task moved');
+          renderAll();
         });
       });
 
-      // 2) Save task: multiple selectors supported (legacy .save-btn, #saveTaskBtn)
-      function emitSaveTask(){
-        const titleEl = document.getElementById('taskTitle');
-        const title = titleEl ? titleEl.value.trim() : '';
-        if(!title){ window.pb.toast('Please provide a title', { type: 'error' }); return; }
-        const payload = {
-          title: title,
-          desc: document.getElementById('taskDesc') ? document.getElementById('taskDesc').value.trim() : '',
-          est: document.getElementById('estTime') ? document.getElementById('estTime').value : '',
-          due: document.getElementById('dueDate') ? document.getElementById('dueDate').value : '',
-          tags: document.getElementById('tagsInput') ? document.getElementById('tagsInput').value : ''
-        };
-        // Emit both modern & legacy custom events
-        window.dispatchEvent(new CustomEvent('prio:saveTask', { detail: payload }));
-        window.dispatchEvent(new CustomEvent('saveTask', { detail: payload })); // legacy alias
-        window.pb.toast('Task added');
-        // optimistic clear
-        if(document.getElementById('taskForm')) document.getElementById('taskForm').reset();
-      }
+      prioShowLoading(false);
+    }
 
-      document.querySelectorAll('.save-btn, #saveTaskBtn').forEach(btn=>{
-        btn.addEventListener('click', emitSaveTask);
-      });
-      // Ensure form submit also works
-      const form = document.getElementById('taskForm');
-      if(form){ form.addEventListener('submit', function(ev){ ev.preventDefault(); emitSaveTask(); }); }
-
-      // 3) Clear button
-      const clearBtn = document.getElementById('clearTaskBtn');
-      if(clearBtn){
-        clearBtn.addEventListener('click', function(){
-          if(document.getElementById('taskForm')) document.getElementById('taskForm').reset();
-          window.pb.toast('Cleared');
-        });
-      }
-
-      // 4) Task action delegation (start, edit, delete, complete) - emit prio:taskAction with details
-      document.body.addEventListener('click', function(ev){
-        const actionBtn = ev.target.closest('[data-action], .task-start, .task-edit, .task-delete, .task-more, .task-complete');
-        if(!actionBtn) return;
-        let action = actionBtn.getAttribute('data-action') || (actionBtn.classList.contains('task-start') ? 'start' : (actionBtn.classList.contains('task-edit') ? 'edit' : (actionBtn.classList.contains('task-delete') ? 'delete' : (actionBtn.classList.contains('task-complete') ? 'complete' : 'more'))));
-        // find the closest task element
-        const taskEl = actionBtn.closest('.task-card, .task-item, .task-row');
-        const taskId = taskEl ? (taskEl.getAttribute('data-id') || taskEl.id || null) : null;
-        // Emit event for your app to handle
-        window.dispatchEvent(new CustomEvent('prio:taskAction', { detail: { action, taskId, origin: actionBtn } }));
-        // legacy alias
-        window.dispatchEvent(new CustomEvent('taskAction', { detail: { action, taskId } }));
-      });
-
-      // 5) Export / Sync buttons -> emit app-level events
-      document.getElementById('exportTasks')?.addEventListener('click', function(){ window.dispatchEvent(new CustomEvent('prio:exportCSV')); window.pb.toast('Export requested'); });
-      document.getElementById('syncCalendar')?.addEventListener('click', function(){ window.dispatchEvent(new CustomEvent('prio:syncCalendar')); window.pb.toast('Calendar sync requested'); });
-
-      // 6) Loading skeleton helper
-      window.prioShowLoading = function(show){
-        const sk = document.getElementById('tasksSkeleton');
-        const list = document.getElementById('taskList');
-        if(!sk || !list) return;
-        if(show){ sk.style.display = 'block'; list.style.opacity = '0.5' } else { sk.style.display = 'none'; list.style.opacity = '1' }
-      }
-
-      // 7) Metric updates listener (prio:updateMetrics)
-      window.addEventListener('prio:updateMetrics', function(e){
-        const d = e.detail || {};
-        document.getElementById('dueTodayVal') && (document.getElementById('dueTodayVal').textContent = d.dueToday ?? 0);
-        document.getElementById('overdueVal') && (document.getElementById('overdueVal').textContent = d.overdue ?? 0);
-        document.getElementById('completedWeekVal') && (document.getElementById('completedWeekVal').textContent = d.completedWeek ?? 0);
-        document.getElementById('insCompleted') && (document.getElementById('insCompleted').textContent = d.completedWeek ?? 0);
-        document.getElementById('topProject') && (document.getElementById('topProject').textContent = d.topProject || '—');
-      });
-
-      // 8) Focus timer demo (non-invasive)
-      (function(){
-        const el = document.getElementById('focusTimer');
-        const sessionsEl = document.getElementById('sessionsCount');
-        let seconds = 25*60, interval = null, sessions = 0;
-        function render(){ if(el) el.textContent = String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0') }
-        render();
-        document.getElementById('playFocus')?.addEventListener('click', function(){
-          if(interval) return;
-          interval = setInterval(()=>{ if(seconds<=0){ clearInterval(interval); interval=null; sessions++; sessionsEl.textContent = sessions; window.pb.toast('Focus session complete'); seconds = 25*60; render(); return; } seconds--; render(); }, 1000);
-        });
-        document.getElementById('pauseFocus')?.addEventListener('click', function(){ if(interval){ clearInterval(interval); interval=null } });
-        document.getElementById('stopFocus')?.addEventListener('click', function(){ if(interval){ clearInterval(interval); interval=null } seconds = 25*60; render(); });
-      })();
-
-      // 9) Quick add top button
-      document.getElementById('addTaskBtnTop')?.addEventListener('click', function(){ document.getElementById('taskTitle')?.focus(); window.scrollTo({top:0,behavior:'smooth'}); });
-
-      // 10) Keyboard shortcut for quick-add (Cmd/Ctrl+K)
-      window.addEventListener('keydown', function(ev){ if((ev.ctrlKey||ev.metaKey) && ev.key.toLowerCase()==='k'){ ev.preventDefault(); document.getElementById('taskTitle')?.focus(); } });
-
-      // 11) Open matrix in modal
-      document.getElementById('openMatrixBtn')?.addEventListener('click', function(){
-        const content = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div style="font-weight:700">Priority Matrix</div>
-            <div class="muted">Drag tasks between quadrants</div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Do First</div>
-            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Schedule</div>
-            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Delegate</div>
-            <div style="padding:12px;border:1px solid var(--border);border-radius:10px">Eliminate</div>
-          </div>
-        `;
-        window.pb.openModal(content);
-        // Emit event so your app can populate matrix content if needed
-        window.dispatchEvent(new CustomEvent('prio:openMatrix'));
-      });
-
-      // 12) Expose legacy selectors to window for debugging
-      window._priobox_els = {
-        taskList: document.getElementById('taskList'),
-        saveBtn: document.getElementById('saveTaskBtn'),
-        taskForm: document.getElementById('taskForm'),
-        matrixGrid: document.getElementById('matrixGrid'),
-        quads: document.querySelectorAll('.quadrant')
+    /* ---------------- Wire store to UI actions ---------------- */
+    // add task from quick-add
+    async function handleAddTaskFromForm(){
+      const t = (els.taskTitle.value || '').trim();
+      if(!t){ window.pb.toast('Please provide a title', { type: 'error' }); return; }
+      const newTask = {
+        title: t,
+        desc: (els.taskDesc.value || '').trim(),
+        est: els.estTime.value || '',
+        due: els.dueDate.value || '',
+        tags: els.tagsInput.value || '',
+        quadrant: 'do-first',
+        completed: false
       };
+      await store.add(newTask);
+      // emit legacy and modern events
+      window.dispatchEvent(new CustomEvent('prio:saveTask', { detail: newTask }));
+      window.dispatchEvent(new CustomEvent('saveTask', { detail: newTask }));
+      // clear form
+      if(els.taskForm) els.taskForm.reset();
+      renderAll();
+    }
 
-      // done
-      console.log('PrioBox UI Bridge initialized — visual overhaul loaded. Bridge supports prio:saveTask, prio:taskAction, prio:updateMetrics, prio:route, prioShowLoading, prio:exportCSV, prio:syncCalendar, prio:openMatrix');
+    // task action delegation (edit/delete/start)
+    document.body.addEventListener('click', async (ev) => {
+      const actionBtn = ev.target.closest('[data-action], .task-start, .task-edit, .task-delete, .task-more, .task-complete');
+      if(!actionBtn) return;
+      const taskEl = actionBtn.closest('.task-card, .task-item, .task-row, .quad-task');
+      const taskId = taskEl ? (taskEl.dataset.id || taskEl.getAttribute('data-id') || null) : null;
+      let action = actionBtn.getAttribute('data-action') || (actionBtn.classList.contains('task-start') ? 'start' : (actionBtn.classList.contains('task-edit') ? 'edit' : (actionBtn.classList.contains('task-delete') ? 'delete' : 'more')));
+      // emit generic event
+      window.dispatchEvent(new CustomEvent('prio:taskAction', { detail: { action, taskId, origin: actionBtn } }));
+      window.dispatchEvent(new CustomEvent('taskAction', { detail: { action, taskId } }));
 
+      if(action === 'delete'){
+        if(!taskId) return;
+        if(!confirm('Delete this task?')) return;
+        await store.delete(taskId);
+        window.pb.toast('Task deleted');
+        renderAll();
+      } else if(action === 'start'){
+        // starting focus on a task: set timer and optionally mark something
+        const t = await store.find(taskId);
+        if(!t) return;
+        // For demo, open drawer/modal with details and set focus timer (we simply notify)
+        window.pb.openModal(`<div style="font-weight:700;margin-bottom:8px">${escapeHtml(t.title)}</div><div class="muted">${escapeHtml(t.desc||'')}</div><div style="margin-top:12px"><button class="btn btn-primary" id="modalStartFocus">Start Focus</button></div>`);
+        document.getElementById('modalStartFocus').addEventListener('click', ()=>{ document.getElementById('playFocus').click(); });
+      } else if(action === 'edit'){
+        // open drawer with task details for editing
+        const t = await store.find(taskId);
+        if(!t) return;
+        openEditDrawer(t);
+      }
+    });
+
+    /* ---------------- Edit Drawer ---------------- */
+    function openEditDrawer(task){
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-weight:700">Edit Task</div>
+          <div class="muted">${escapeHtml(task.title)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label class="lbl">Title</label>
+          <input class="input" id="editTitle" value="${escapeHtml(task.title)}">
+          <label class="lbl">Description</label>
+          <textarea class="input" id="editDesc">${escapeHtml(task.desc||'')}</textarea>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1">
+              <label class="lbl">Estimate (min)</label>
+              <input class="input" id="editEst" value="${escapeHtml(task.est||'')}">
+            </div>
+            <div style="width:160px">
+              <label class="lbl">Due</label>
+              <input class="input" id="editDue" type="date" value="${task.due||''}">
+            </div>
+          </div>
+          <label class="lbl">Tags</label>
+          <input class="input" id="editTags" value="${escapeHtml(task.tags||'')}">
+          <label class="lbl">Quadrant</label>
+          <select class="input" id="editQuadrant">
+            <option value="do-first"${task.quadrant==='do-first'?' selected':''}>Do First</option>
+            <option value="schedule"${task.quadrant==='schedule'?' selected':''}>Schedule</option>
+            <option value="delegate"${task.quadrant==='delegate'?' selected':''}>Delegate</option>
+            <option value="eliminate"${task.quadrant==='eliminate'?' selected':''}>Eliminate</option>
+          </select>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+            <button class="btn btn-ghost" id="cancelEdit">Cancel</button>
+            <button class="btn btn-primary" id="saveEdit">Save</button>
+          </div>
+        </div>
+      `;
+      const { overlay, modal } = window.pb.openModal(content.innerHTML);
+      // add listeners to modal controls (note: modal recreated so select via DOM)
+      modal.querySelector('#cancelEdit').addEventListener('click', ()=> overlay.remove());
+      modal.querySelector('#saveEdit').addEventListener('click', async ()=> {
+        const patch = {
+          title: modal.querySelector('#editTitle').value.trim(),
+          desc: modal.querySelector('#editDesc').value.trim(),
+          est: modal.querySelector('#editEst').value,
+          due: modal.querySelector('#editDue').value,
+          tags: modal.querySelector('#editTags').value,
+          quadrant: modal.querySelector('#editQuadrant').value
+        };
+        await store.update(task.id, patch);
+        window.pb.toast('Task updated');
+        overlay.remove();
+        renderAll();
+      });
+    }
+
+    /* ---------------- Export CSV ---------------- */
+    document.getElementById('exportTasks')?.addEventListener('click', async ()=>{
+      const rows = await store.list();
+      if(!rows.length){ window.pb.toast('No tasks to export', { type:'error' }); return; }
+      const csv = [['id','title','desc','est','due','tags','quadrant','completed','createdAt']].concat(rows.map(r => [
+        r.id, `"${(r.title||'').replace(/"/g,'""')}"`, `"${(r.desc||'').replace(/"/g,'""')}"`, r.est||'', r.due||'', `"${(r.tags||'').replace(/"/g,'""')}"`, r.quadrant||'', r.completed?1:0, r.createdAt||''
+      ])).map(r => r.join(',')).join('\n');
+      // download blob
+      const blob = new Blob([csv], { type:'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'priobox-tasks.csv'; a.click();
+      URL.revokeObjectURL(url);
+      window.pb.toast('Exported CSV');
+      // emit event for app hooks too
+      window.dispatchEvent(new CustomEvent('prio:exportCSV', { detail: { count: rows.length } }));
+    });
+
+    /* ---------------- Calendar sync stub ---------------- */
+    document.getElementById('syncCalendar')?.addEventListener('click', ()=>{
+      // This is a stub. Real calendar sync requires OAuth + calendar API.
+      window.pb.toast('Calendar sync: not configured (stub)');
+      window.dispatchEvent(new CustomEvent('prio:syncCalendar'));
+    });
+
+    /* ---------------- Focus timer (integrates with task start) ---------------- */
+    (function(){
+      const el = els.focusTimer;
+      const sessionsEl = els.sessionsCount;
+      let seconds = 25*60, interval = null, sessions = parseInt(localStorage.getItem('priobox_sessions')||'0',10) || 0;
+      sessionsEl.textContent = sessions;
+      function render(){ el.textContent = String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0') }
+      render();
+      document.getElementById('playFocus')?.addEventListener('click', ()=> {
+        if(interval) return;
+        interval = setInterval(()=> {
+          if(seconds<=0){ clearInterval(interval); interval=null; sessions++; localStorage.setItem('priobox_sessions', String(sessions)); sessionsEl.textContent = sessions; window.pb.toast('Focus session complete'); seconds = 25*60; render(); return; }
+          seconds--; render();
+        }, 1000);
+      });
+      document.getElementById('pauseFocus')?.addEventListener('click', ()=> { if(interval){ clearInterval(interval); interval=null; } });
+      document.getElementById('stopFocus')?.addEventListener('click', ()=> { if(interval){ clearInterval(interval); interval=null; } seconds = 25*60; render(); });
     })();
+
+    /* ---------------- prioShowLoading helper (exports to global) ---------------- */
+    window.prioShowLoading = function(show){
+      const sk = document.getElementById('tasksSkeleton');
+      const list = document.getElementById('taskList');
+      if(!sk || !list) return;
+      if(show){ sk.style.display = 'block'; list.style.opacity = '0.5' } else { sk.style.display = 'none'; list.style.opacity = '1' }
+    };
+
+    /* ---------------- Compatibility bridge (events, legacy aliases) ---------------- */
+    // Nav clicks
+    document.querySelectorAll('.nav-item').forEach(item=>{
+      item.addEventListener('click', function(){
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        this.classList.add('active');
+        const route = this.getAttribute('data-route') || this.id || this.textContent.toLowerCase();
+        window.dispatchEvent(new CustomEvent('prio:route', { detail: { route } }));
+      });
+    });
+
+    // Save button(s)
+    document.querySelectorAll('.save-btn, #saveTaskBtn').forEach(btn => btn.addEventListener('click', handleAddTaskFromForm));
+    if(els.taskForm) els.taskForm.addEventListener('submit', (e)=>{ e.preventDefault(); handleAddTaskFromForm(); });
+
+    // Clear button
+    document.getElementById('clearTaskBtn')?.addEventListener('click', ()=> { if(els.taskForm) els.taskForm.reset(); window.pb.toast('Cleared'); });
+
+    // Expose debug references
+    window._priobox_els = {
+      taskList: els.taskList,
+      taskForm: els.taskForm,
+      quadLists: els.quadLists,
+      store: store
+    };
+
+    /* ---------------- Initial load ---------------- */
+    (async function init(){
+      await store.init();
+      // If empty, create a tiny sample to show UX
+      const all = await store.list();
+      if(!all.length){
+        await store.add({ title: 'Welcome to PrioBox — add your first task', desc: 'Use the Quick Add on the right. Drag tasks into matrix quadrants.', est: '15', due: '', tags: 'onboarding', quadrant: 'do-first' });
+      }
+      // initial render
+      renderAll();
+      // emit metrics once ready
+      window.dispatchEvent(new CustomEvent('prio:updateMetrics', { detail: computeMetrics(await store.list()) }));
+      console.log('PrioBox client initialized (inline JS).');
+    })();
+
+    /* ---------------- Helper: open edit via event (external) ---------------- */
+    window.addEventListener('prio:openEditTask', async (e) => {
+      const id = e.detail && e.detail.id;
+      if(!id) return;
+      const t = await store.find(id);
+      if(t) openEditDrawer(t);
+    });
+
+  })();
   </script>
 </body>
 </html>
